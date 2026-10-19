@@ -25,15 +25,19 @@
 #include <iostream>
 
 namespace cp6 {
-
+// persistant contact system
 template<typename TW>
 class pcnt_system_tt: public flag_phase_linker {
 public:
   static constexpr unsigned pcqt_num = get_matching_num<is_pcqt, qt_ts<TW>>();
-  static constexpr auto pcqt_to_qt =
-    generate_tuple_indirection<get_matching_ts<is_pcqt, qt_ts<TW>>, qt_ts<TW>>();
-  static constexpr auto qt_to_pcqt =
-    generate_tuple_indirection<qt_ts<TW>, get_matching_ts<is_pcqt, qt_ts<TW>>>();
+  static constexpr auto pcqt_to_qt = generate_tuple_indirection<
+    get_matching_ts<is_pcqt, qt_ts<TW>>,
+    qt_ts<TW>
+  >();
+  static constexpr auto qt_to_pcqt = generate_tuple_indirection<
+    qt_ts<TW>,
+    get_matching_ts<is_pcqt, qt_ts<TW>>
+  >();
 
   template<unsigned QT1, unsigned QT2>
   const auto &get_pcnt_data(unsigned reg) const {
@@ -63,7 +67,8 @@ public:
     static constexpr unsigned pcqt2 = qt_to_pcqt[QT2];
     static_assert(pcqt1 != -1 && pcqt2 != -1);
 
-    return (const unsigned *)m_pcnt_set.template to_q1_pcnt1<pcqt1, pcqt2>()[reg]
+    return (const unsigned *)m_pcnt_set
+      .template to_q1_pcnt1<pcqt1, pcqt2>()[reg]
       .template get<0>()
       .data();
   }
@@ -75,7 +80,8 @@ public:
     static constexpr unsigned pcqt2 = qt_to_pcqt[QT2];
     static_assert(pcqt1 != -1 && pcqt2 != -1);
 
-    return (const unsigned *)m_pcnt_set.template to_q2_pcnt2<pcqt1, pcqt2>()[reg]
+    return (const unsigned *)m_pcnt_set
+      .template to_q2_pcnt2<pcqt1, pcqt2>()[reg]
       .template get<0>()
       .data();
   }
@@ -87,7 +93,8 @@ public:
     static constexpr unsigned pcqt2 = qt_to_pcqt[QT2];
     static_assert(pcqt1 != -1 && pcqt2 != -1);
 
-    return (const unsigned *)m_pcnt_set.template to_q1_pcnt1<pcqt1, pcqt2>()[reg]
+    return (const unsigned *)m_pcnt_set
+      .template to_q1_pcnt1<pcqt1, pcqt2>()[reg]
       .template get<1>()
       .data();
   }
@@ -99,7 +106,8 @@ public:
     static constexpr unsigned pcqt2 = qt_to_pcqt[QT2];
     static_assert(pcqt1 != -1 && pcqt2 != -1);
 
-    return (const unsigned *)m_pcnt_set.template to_q2_pcnt2<pcqt1, pcqt2>()[reg]
+    return (const unsigned *)m_pcnt_set
+      .template to_q2_pcnt2<pcqt1, pcqt2>()[reg]
       .template get<1>()
       .data();
   }
@@ -130,7 +138,9 @@ public:
     static constexpr unsigned pcqt1 = qt_to_pcqt[QT1];
     static constexpr unsigned pcqt2 = qt_to_pcqt[QT2];
     static_assert(pcqt1 != -1 && pcqt2 != -1);
-    m_pcnt_set.template r2_externals<pcqt1, pcqt2>().add_ds(dlm::perm_map<2>{is, perm});
+    m_pcnt_set.template r2_externals<pcqt1, pcqt2>().add_ds(
+      dlm::perm_map<2>{is, perm}
+    );
   }
 
   template<unsigned QT1, unsigned QT2>
@@ -179,11 +189,13 @@ public:
       static constexpr unsigned qt2 = pcqt_to_qt[PCQT2];
       static constexpr unsigned t = tri_linearize(PCQT1, PCQT2, pcqt_num);
 
-      if (narrowphase_update(
-            qt_state.template get_qt<qt1>(reg).cd(),
-            qt_state.template get_qt<qt2>(reg).cd(),
-            get_pcnt_data<qt1, qt2>(reg)
-          )) {
+      if (
+        narrowphase_update(
+          qt_state.template get_qt<qt1>(reg).cd(),
+          qt_state.template get_qt<qt2>(reg).cd(),
+          get_pcnt_data<qt1, qt2>(reg)
+        )
+      ) {
         task1.mark_as_done(tri_linearize(PCQT1, PCQT2, pcqt_num));
       };
     });
@@ -199,6 +211,7 @@ public:
         static constexpr unsigned qt1 = pcqt_to_qt[PCQT1];
         static constexpr unsigned qt2 = pcqt_to_qt[PCQT2];
         static constexpr unsigned t = tri_linearize(PCQT1, PCQT2, pcqt_num);
+
         if (!task1.done(t)) {
           return narrowphase_update(
             qt_state.template get_qt<qt1>(reg).cd(),
@@ -214,8 +227,8 @@ public:
 
   // No reg argument because of clear_null
   void update_pt3() {
-    // cull non-colliding from pcnt set. This part must be serial due to the index sets potentially
-    // being interdependent.
+    // cull non-colliding from pcnt set. This part must be serial due to the
+    // index sets potentially being interdependent.
     for (unsigned reg = 0; reg < m_pcnt_set.size(); reg++) {
       tri_apply<pcqt_num>([&]<size_t PCQT1, size_t PCQT2> {
         auto &pcnt_data = m_pcnt_set.template pcnt_data<PCQT1, PCQT2>()[reg];
@@ -226,7 +239,10 @@ public:
             static constexpr unsigned qt2 = pcqt_to_qt[PCQT2];
             tuple_for_each(
               [&](auto &state) {
-                if constexpr (requires { state.template on_pcnt_null<qt1, qt2>(0, 0, 0, 0); }) {
+                if constexpr (requires {
+                                state
+                                  .template on_pcnt_null<qt1, qt2>(0, 0, 0, 0);
+                              }) {
                   unsigned q1 = pcnt_to_q1<qt1, qt2>(reg)[pcnt];
                   unsigned q2 = pcnt_to_q2<qt1, qt2>(reg)[pcnt];
                   state.template on_pcnt_null<qt1, qt2>(reg, pcnt, q1, q2);
@@ -234,7 +250,10 @@ public:
               },
               m_state->m_states
             );
-            null<tri_linearize(PCQT1, PCQT2, pcqt_num)>(m_pcnt_set, {reg, pcnt});
+            null<tri_linearize(PCQT1, PCQT2, pcqt_num)>(
+              m_pcnt_set,
+              {reg, pcnt}
+            );
           }
         }
       });
@@ -253,7 +272,11 @@ public:
       auto &pcnt_data = get_pcnt_data<qt1, qt2>(reg);
       unsigned old_pcnt_num = pcnt_data.size();
 
-      grow<tri_linearize(PCQT1, PCQT2, pcqt_num)>(m_pcnt_set, tcnt_data.size(), {reg});
+      grow<tri_linearize(PCQT1, PCQT2, pcqt_num)>(
+        m_pcnt_set,
+        tcnt_data.size(),
+        {reg}
+      );
       return copy_tcnt_to_pcnt(tcnt_data, old_pcnt_num, pcnt_data);
     });
 
@@ -289,7 +312,9 @@ public:
         static constexpr unsigned qt2 = pcqt_to_qt[PCQT2];
         tuple_for_each(
           [&](auto &state) {
-            if constexpr (requires { state.template on_pcnt_add<qt1, qt2>(0, 0, 0, 0); }) {
+            if constexpr (requires {
+                            state.template on_pcnt_add<qt1, qt2>(0, 0, 0, 0);
+                          }) {
               state.template on_pcnt_add<qt1, qt2>(reg, pcnt, q1, q2);
             }
           },
@@ -304,16 +329,12 @@ public:
     // can be done in parallel
     for (unsigned reg = 0; reg < m_pcnt_set.size(); reg++) {
       update_pt1(reg);
-      // broadphase()
-      // narrowphase()
       update_pt2(reg);
     }
     // cannot be parallel reg due to the clear null
     update_pt3();
     // can be done in parallel
-    for (unsigned reg = 0; reg < m_pcnt_set.size(); reg++) {
-      update_pt4(reg);
-    }
+    for (unsigned reg = 0; reg < m_pcnt_set.size(); reg++) { update_pt4(reg); }
   }
 
 private:
@@ -327,7 +348,8 @@ private:
     static constexpr unsigned pcqt1 = qt_to_pcqt[QT1];
     static constexpr unsigned pcqt2 = qt_to_pcqt[QT2];
     if constexpr (pcqt1 != -1 && pcqt2 != -1) {
-      unsigned pcnt_num = m_pcnt_set.template to_q1_pcnt1<pcqt1, pcqt2>()[reg].size();
+      unsigned pcnt_num = m_pcnt_set.template to_q1_pcnt1<pcqt1, pcqt2>()[reg]
+                            .size();
       return add_pcnt_phase_links(
         pcnt_num,
         pcnt_to_q1<QT1, QT2>(reg),
@@ -380,8 +402,14 @@ private:
     reg_s.add_r1_external(m_q1_map);
     reg_s.add_r1_external(m_q2_map);
     for_each_i<pcqt_num>([&]<size_t PCQT> {
-      reg_s.template add_r2_external<pcqt_to_qt[PCQT]>(m_q1_map, dlm::ckey<PCQT>{});
-      reg_s.template add_r2_external<pcqt_to_qt[PCQT]>(m_q2_map, dlm::ckey<PCQT>{});
+      reg_s.template add_r2_external<pcqt_to_qt[PCQT]>(
+        m_q1_map,
+        dlm::ckey<PCQT>{}
+      );
+      reg_s.template add_r2_external<pcqt_to_qt[PCQT]>(
+        m_q2_map,
+        dlm::ckey<PCQT>{}
+      );
     });
   }
 
@@ -491,8 +519,8 @@ struct pcnt_system: flag_phase_linker {
 
 /*
   THOUGHTS:
-    I could modify [reg]<pcqt1, pcqt2>[ps1][ps2][psc_pcnt] to only store valid ps ps pairs,
-    but that's just additional complexity for not much gain.
+    I could modify [reg]<pcqt1, pcqt2>[ps1][ps2][psc_pcnt] to only store valid
+  ps ps pairs, but that's just additional complexity for not much gain.
 
     We should probably change
       [reg]<pcqt1>[ps1][psq1][psq2]<pcqt2>[psq1_psc_pcnt]
@@ -501,24 +529,26 @@ struct pcnt_system: flag_phase_linker {
     to remove redundent ps ps combos
 
 
-    Our current set won't work, and the flip median is hard to maintain and not optimal.
-    The problem is a qt can be any ps, but we are representing this relationship as if
-    qt1 can only have the smaller ps. New sets:
-      [reg]<qt1, qt2>[ps1][ps2][psc_pcnt] <=> [reg]<qt1, qt2>[pcnt]
-      [reg]<qt1, qt2>[ps1][ps2][psc_pcnt] <=> [reg]<qt1>[ps1][psq1][ps2]<qt1>[psq1_psc_pcnt]
-      [reg]<qt1, qt2>[ps1][ps2][psc_pcnt] <=> [reg]<qt2>[ps2][psq1][ps1]<qt2>[psq2_psc_pcnt]
+    Our current set won't work, and the flip median is hard to maintain and not
+  optimal. The problem is a qt can be any ps, but we are representing this
+  relationship as if qt1 can only have the smaller ps. New sets: [reg]<qt1,
+  qt2>[ps1][ps2][psc_pcnt] <=> [reg]<qt1, qt2>[pcnt] [reg]<qt1,
+  qt2>[ps1][ps2][psc_pcnt] <=> [reg]<qt1>[ps1][psq1][ps2]<qt1>[psq1_psc_pcnt]
+      [reg]<qt1, qt2>[ps1][ps2][psc_pcnt] <=>
+  [reg]<qt2>[ps2][psq1][ps1]<qt2>[psq2_psc_pcnt]
 
 
-    It is required that all pcnt_data be a data set. So, each pcnt_data should support the null
-  operation. This means all the update_narrowphase function needs to return is which indices are
-  null.
+    It is required that all pcnt_data be a data set. So, each pcnt_data should
+  support the null operation. This means all the update_narrowphase function
+  needs to return is which indices are null.
 
-    Projected adjacency is better then dynamically maintained adjacency if multiple operations
-    are called. At least in terms of the amount of memory getting moved around and simplicity.
+    Projected adjacency is better then dynamically maintained adjacency if
+  multiple operations are called. At least in terms of the amount of memory
+  getting moved around and simplicity.
 
-    pcqt is a subset of plqt. But it really shouldn't. If only one of the bodies in a
-    contact pair get's the persistant contact treatment, then we end up breaking some laws of
-  physics.
+    pcqt is a subset of plqt. But it really shouldn't. If only one of the bodies
+  in a contact pair get's the persistant contact treatment, then we end up
+  breaking some laws of physics.
 
     Edges will fuck up when q's are swapped around.
       For this to not happen we need these maps
@@ -540,17 +570,17 @@ struct pcnt_system: flag_phase_linker {
         <q1>[reg]<plqt2>[plqt1][pcnt] <=> <q1>[reg]<plqt2>[q][q_pcnt]
         <q2>[reg]<plqt2>[plqt1][pcnt] <=> <q2>[reg]<plqt2>[q][q_pcnt]
 
-      Actually, much of the code that uses contacts are specilized per <qt, qt> pair.
-      So, not having it implicit would require some sort of dynamic dispatch. However
-      even with it implicit, the inverse maps are not cache coherent like we want.
-      To achieve this cache coherency we could do an inverse projection onto [reg]<plqt,
-  plqt>[adj] whenever the  sets are changed. It would be better if we could make
-  [q]<plqt2>[q_pcnt] in [reg]<plqt1>[q]<plqt2>[q_pcnt] coherent.
+      Actually, much of the code that uses contacts are specilized per <qt, qt>
+  pair. So, not having it implicit would require some sort of dynamic dispatch.
+  However even with it implicit, the inverse maps are not cache coherent like we
+  want. To achieve this cache coherency we could do an inverse projection onto
+  [reg]<plqt, plqt>[adj] whenever the  sets are changed. It would be better if
+  we could make [q]<plqt2>[q_pcnt] in [reg]<plqt1>[q]<plqt2>[q_pcnt] coherent.
 
-      Since our goal is to get a feature complete prototype, it is best we stick to the
-  non-coherent non-projected implicit method, so this: <q1>[reg]<plqt1, plqt2>[pcnt] <=>
-  <q1>[reg]<plqt1>[q]<plqt2>[q_pcnt] <q2>[reg]<plqt1, plqt2>[pcnt] <=>
-  <q2>[reg]<plqt1>[q]<plqt2>[q_pcnt]
+      Since our goal is to get a feature complete prototype, it is best we stick
+  to the non-coherent non-projected implicit method, so this: <q1>[reg]<plqt1,
+  plqt2>[pcnt] <=> <q1>[reg]<plqt1>[q]<plqt2>[q_pcnt] <q2>[reg]<plqt1,
+  plqt2>[pcnt] <=> <q2>[reg]<plqt1>[q]<plqt2>[q_pcnt]
 
         <q1>[reg]<plqt1, plqt2>[pcnt] <=> <q1>[reg]<plqt2>[q]<plqt1>[q_pcnt]
         <q2>[reg]<plqt1, plqt2>[pcnt] <=> <q2>[reg]<plqt2>[q]<plqt1>[q_pcnt]
@@ -563,9 +593,9 @@ struct pcnt_system: flag_phase_linker {
 
         This way we can use the r2_coherent key store
 
-    I didn't take into account that a set being a or b is implicitly tied with it's qt index.
-    This means each qt has two sets: a set of qts that it is a in and a set of qts that it is b
-  in.
+    I didn't take into account that a set being a or b is implicitly tied with
+  it's qt index. This means each qt has two sets: a set of qts that it is a in
+  and a set of qts that it is b in.
 
       For example, say I have the qt set <qt0, qt1, qt2>, these are the ab sets
       qt0 a set: {qt0, qt1, qt2}
@@ -598,9 +628,10 @@ struct pcnt_system: flag_phase_linker {
       remove any non-colliding persistent contacts.
       Add the new contacts to persistent contacts
 
-    pulling in new contacts from narrowphase state implies there is a way to append to the end of
-  col state. If we have two different routes for proccessing contacts, then we could pull in all
-  the contacts from the last frame and add them here.
+    pulling in new contacts from narrowphase state implies there is a way to
+  append to the end of col state. If we have two different routes for
+  proccessing contacts, then we could pull in all the contacts from the last
+  frame and add them here.
 
       OVERALL PROCESS 2:
         Add old contacts to persistent contacts
@@ -619,7 +650,8 @@ struct pcnt_system: flag_phase_linker {
 /*
   // [reg][psc][psc_pcnt] -> [reg][ps1][psq1][psq1_psc_pcnt]
   // [reg][psc][psc_pcnt] -> [reg][ps2][psq2][psq2_psc_pcnt]
-  // each rank of the inverse key is stored in a seperate vector. Each rank of the both maps
+  // each rank of the inverse key is stored in a seperate vector. Each rank of
+the both maps
   // are stored in the same vector. hehe
   struct psc_store_t:
   dlm::comp_ds<dlm::vec_ds<dlm::arr_ds<
@@ -667,14 +699,15 @@ struct pcnt_system: flag_phase_linker {
                             // <0> psc_pcnt_to_pscq
         // [reg]<pcqt1, pcqt2>[psc][psc_pcnt] -> [reg]<pcqt1, pcqt2>[pcnt]
         dlm::dmap<dlm::pkey_wrap<
-          dlm::comp_key_store<dlm::vec_ds<dlm::arr_ds<psc_num, dlm::key_vec<1, 1>>>>,
-          0,
+          dlm::comp_key_store<dlm::vec_ds<dlm::arr_ds<psc_num, dlm::key_vec<1,
+1>>>>, 0,
           0
         >>,
         // For when psq changes:
-        // [reg]<pcqt1, pcqt2>[psc][psc_pcnt] -> <pcqt1>[ps1][psq1][psq1_psc_pcnt]<q1>
-        // [reg]<pcqt1, pcqt2>[psc][psc_pcnt] -> <pcqt2>[ps2][psq2][psq2_psc_pcnt]<q2>
-        dlm::multi_dmap<psc_store_t>
+        // [reg]<pcqt1, pcqt2>[psc][psc_pcnt] ->
+<pcqt1>[ps1][psq1][psq1_psc_pcnt]<q1>
+        // [reg]<pcqt1, pcqt2>[psc][psc_pcnt] ->
+<pcqt2>[ps2][psq2][psq2_psc_pcnt]<q2> dlm::multi_dmap<psc_store_t>
       >>,
       // median for when the ab_links need to be interpreted as ba_links
       dlm::comp_ds<dlm::vec_ds<dlm::arr_ds<psc_num, unsigned>>>
@@ -696,7 +729,8 @@ struct pcnt_system: flag_phase_linker {
           dlm::srq<dlm::perm_arr< // [psq_psc_pcnt]<q1>
             pcqt_num - PCQT,
             // For when psq changes:
-            //  [reg]<pcqt1>[ps1][psq][psq2_psc_pcnt]<q1> -> [reg]<pcqt1, pcqt2>[psc][psc_pcnt]
+            //  [reg]<pcqt1>[ps1][psq][psq2_psc_pcnt]<q1> -> [reg]<pcqt1,
+pcqt2>[psc][psc_pcnt]
             dlm::dmap<dlm::comp_key_store<dlm::vec_ds<dlm::arr_ds<ps_num,
 dlm::vec_ds<dlm::key_vec<1, 3>>>>>>
           >>
@@ -720,7 +754,8 @@ dlm::vec_ds<dlm::key_vec<1, 3>>>>>>
           dlm::srq<dlm::perm_arr< // [psq_psc_pcnt]<q2>
             PCQT + 1,
             // For when psq changes:
-            //  [reg]<pcqt2>[ps2][psq2][psq2_psc_pcnt]<q2> -> [reg]<pcqt1, pcqt2>[psc][psc_pcnt]
+            //  [reg]<pcqt2>[ps2][psq2][psq2_psc_pcnt]<q2> -> [reg]<pcqt1,
+pcqt2>[psc][psc_pcnt]
             dlm::dmap<dlm::comp_key_store<dlm::vec_ds<dlm::arr_ds<ps_num,
 dlm::vec_ds<dlm::key_vec<1, 3>>>>>>
           >>

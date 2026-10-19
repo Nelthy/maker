@@ -12,28 +12,28 @@
 
 namespace cp6 {
 template<typename TW>
-struct avbd_tnct_fg_tt {
-  static constexpr bool vbd_jacobi_fg = true;
+struct avbd_tnct_fg_tt: flag_avbd_jacobi_fg {
 
   static constexpr auto vbd_qt_to_qt = generate_tuple_indirection<
     get_matching_ts<is_vbd_qt, qt_ts<TW>>,
-    qt_ts<TW>,
-    std::is_same
+    qt_ts<TW>
   >();
 
   static constexpr auto qt_to_vbd_qt = generate_tuple_indirection<
     qt_ts<TW>,
-    get_matching_ts<is_vbd_qt, qt_ts<TW>>,
-    std::is_same
+    get_matching_ts<is_vbd_qt, qt_ts<TW>>
   >();
-  static constexpr unsigned vbd_qt_num = get_matching_num<is_vbd_qt, qt_ts<TW>>();
+  static constexpr unsigned
+    vbd_qt_num = get_matching_num<is_vbd_qt, qt_ts<TW>>();
 
   template<unsigned QT1, unsigned QT2>
   auto &get_avbd_tcnt_data(unsigned reg) {
     static constexpr unsigned vbd_qt1 = qt_to_vbd_qt[QT1];
     static constexpr unsigned vbd_qt2 = qt_to_vbd_qt[QT2];
 
-    static_assert((uses_tcnt<QT1>() || uses_tcnt<QT2>()) && has_collision_force<QT1, QT2>());
+    static_assert(
+      (uses_tcnt<QT1>() || uses_tcnt<QT2>()) && has_collision_force<QT1, QT2>()
+    );
     static_assert(has_collision_force<QT1, QT2>());
     if constexpr (uses_tcnt<QT1>() || uses_tcnt<QT2>()) {
       return m_avbd_tcnt_set.template avbd_tcnt_data<vbd_qt1, vbd_qt2>()[reg];
@@ -55,7 +55,7 @@ private:
     return has_collision_force_v<qt_t<QT1, TW>, qt_t<QT2, TW>>;
   }
 
-  void start_step(unsigned reg, float h) {
+  bool start_step(unsigned reg, float h) {
     auto &reg_s = get<is_region_state>(*m_state);
     auto &np_s = get<narrowphase_system>(*m_state);
 
@@ -64,8 +64,14 @@ private:
       static constexpr unsigned qt1 = vbd_qt_to_qt[VBD_QT1];
       static constexpr unsigned qt2 = vbd_qt_to_qt[VBD_QT2];
 
-      if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) && has_collision_force<qt1, qt2>()) {
-        dlm::clear<tri_linearize(VBD_QT1, VBD_QT2, vbd_qt_num)>(m_avbd_tcnt_set, reg);
+      if constexpr (
+        (uses_tcnt<qt1>() || uses_tcnt<qt2>())
+        && has_collision_force<qt1, qt2>()
+      ) {
+        dlm::clear<tri_linearize(VBD_QT1, VBD_QT2, vbd_qt_num)>(
+          m_avbd_tcnt_set,
+          reg
+        );
 
         auto &qd1 = reg_s.template get_qt<qt1>(reg).qd();
         auto &qd2 = reg_s.template get_qt<qt2>(reg).qd();
@@ -81,10 +87,10 @@ private:
         init_avbd_state(qd1, qd2, tcnt_data, avbd_tcnt_data);
       }
     });
+    return true;
   };
 
-  // template<unsigned VBD_QT>
-  void add_derivs(unsigned reg) {
+  bool add_derivs(unsigned reg) {
     // if constexpr (!uses_gs_for_tcnt<qt_t<vbd_qt_to_qt[VBD_QT], TW>>::value) {
     //   auto &np_s = get<narrowphase_system>(*m_state);
     //   auto &reg_s = get<is_region_state>(*m_state);
@@ -95,12 +101,13 @@ private:
     //     static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
     //     static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
     //
-    //     if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) && has_collision_force<qt1, qt2>())
+    //     if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) &&
+    //     has_collision_force<qt1, qt2>())
     //     {
     //       auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
     //       auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
-    //       auto &avbd_tcnt_data = m_avbd_tcnt_set.template avbd_tcnt_data<vbd_qt1,
-    //       vbd_qt2>()[reg];
+    //       auto &avbd_tcnt_data = m_avbd_tcnt_set.template
+    //       avbd_tcnt_data<vbd_qt1, vbd_qt2>()[reg];
     //
     //       add_derivs1(qd1_s, qd2_s, avbd_tcnt_data);
     //     }
@@ -112,18 +119,20 @@ private:
     //     static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
     //     static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
     //
-    //     if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) && has_collision_force<qt1, qt2>())
+    //     if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) &&
+    //     has_collision_force<qt1, qt2>())
     //     {
     //       auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
     //       auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
-    //       auto &avbd_tcnt_data = m_avbd_tcnt_set.template avbd_tcnt_data<vbd_qt1,
-    //       vbd_qt2>()[reg];
+    //       auto &avbd_tcnt_data = m_avbd_tcnt_set.template
+    //       avbd_tcnt_data<vbd_qt1, vbd_qt2>()[reg];
     //
     //       add_derivs2(qd1_s, qd2_s, avbd_tcnt_data);
     //     }
     //   });
     // }
-    // static_assert(false, "not implemented");
+    // // static_assert(false, "not implemented");
+    return true;
   }
 
   // template<unsigned VBD_QT, typename COLOR_T>
@@ -138,12 +147,12 @@ private:
   //       static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
   //       static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
   //
-  //       if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) && has_collision_force<qt1,
-  //       qt2>()) {
+  //       if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) &&
+  //       has_collision_force<qt1, qt2>()) {
   //         auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
   //         auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
-  //         auto &avbd_tcnt_data = m_avbd_tcnt_set.template avbd_tcnt_data<vbd_qt1,
-  //         vbd_qt2>()[reg];
+  //         auto &avbd_tcnt_data = m_avbd_tcnt_set.template
+  //         avbd_tcnt_data<vbd_qt1, vbd_qt2>()[reg];
   //
   //         add_derivs1(qd1_s, qd2_s, avbd_tcnt_data, color);
   //       }
@@ -155,12 +164,12 @@ private:
   //       static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
   //       static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
   //
-  //       if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) && has_collision_force<qt1,
-  //       qt2>()) {
+  //       if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) &&
+  //       has_collision_force<qt1, qt2>()) {
   //         auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
   //         auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
-  //         auto &avbd_tcnt_data = m_avbd_tcnt_set.template avbd_tcnt_data<vbd_qt1,
-  //         vbd_qt2>()[reg];
+  //         auto &avbd_tcnt_data = m_avbd_tcnt_set.template
+  //         avbd_tcnt_data<vbd_qt1, vbd_qt2>()[reg];
   //
   //         add_derivs2(qd1_s, qd2_s, avbd_tcnt_data, color);
   //       }
@@ -168,14 +177,17 @@ private:
   //   }
   // }
 
-  void after_step(unsigned reg, float h) {
+  bool after_step(unsigned reg, float h) {
     auto &np_system = get<narrowphase_system>(*m_state);
     auto &reg_s = get<is_region_state>(*m_state);
     tri_apply<vbd_qt_num>([&]<size_t VBD_QT1, size_t VBD_QT2> {
       static constexpr unsigned qt1 = vbd_qt_to_qt[VBD_QT1];
       static constexpr unsigned qt2 = vbd_qt_to_qt[VBD_QT2];
 
-      if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) && has_collision_force<qt1, qt2>()) {
+      if constexpr (
+        (uses_tcnt<qt1>() || uses_tcnt<qt2>())
+        && has_collision_force<qt1, qt2>()
+      ) {
         auto &avbd_tcnt_data = get_avbd_tcnt_data<qt1, qt2>(reg);
         auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
         auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
@@ -183,9 +195,10 @@ private:
         update_avbd_vars(qd1_s, qd2_s, avbd_tcnt_data);
       }
     });
+    return true;
   }
 
-  void end_step(unsigned reg, float h) {}
+  bool end_step(unsigned reg, float h) { return true; }
 
   void init(god::state<TW> &state) {
     m_state = &state;
@@ -201,9 +214,10 @@ private:
     using type = dlm::perm< // <vbd_qt_a, vbd_qt_b>[tcnt]
       std::conditional_t<
         uses_tcnt<VBD_QT1>() || uses_tcnt<VBD_QT2>(),
-        dlm::comp_ds<dlm::vec_ds<
-          avbd_tcnt_combo_t<cd_t<vbd_qt_to_qt[VBD_QT1], TW>, cd_t<vbd_qt_to_qt[VBD_QT2], TW>>
-        >>,
+        dlm::comp_ds<dlm::vec_ds<avbd_tcnt_combo_t<
+          cd_t<vbd_qt_to_qt[VBD_QT1], TW>,
+          cd_t<vbd_qt_to_qt[VBD_QT2], TW>
+        >>>,
         dlm::vec_ds<float, 2>
       >
     >;

@@ -20,19 +20,19 @@
 #include <avbd_basic/collision/avbd_cnt_type_defs.h>
 #include <collision_basic/collision_combo_defs.h>
 
-//
-// struct vbd_liquid_qt:
-// dlm::fdst<cp6::vbd_liquid_qd, cp6::circle_cd>,
-//   cp6::flag_vbd_qt,
-//   cp6::flag_avbd_tcnt_force {};
-//
-// DISABLE_COLLISION_FORCE(vbd_liquid_qt, vbd_liquid_qt)
-//
-// struct vbd_particle_qt:
-// dlm::fdst<cp6::vbd_2d_qd, cp6::circle_cd>,
-//   cp6::flag_vbd_qt,
-//   cp6::flag_avbd_tcnt_force {};
-//
+
+struct vbd_liquid_qt:
+dlm::fdst<cp6::vbd_liquid_qd, cp6::circle_cd>,
+  cp6::flag_vbd_qt,
+  cp6::flag_avbd_tcnt_force {};
+
+DISABLE_COLLISION_FORCE(vbd_liquid_qt, vbd_liquid_qt)
+
+struct vbd_particle_qt:
+dlm::fdst<cp6::vbd_2d_qd, cp6::circle_cd>,
+  cp6::flag_vbd_qt,
+  cp6::flag_avbd_tcnt_force {};
+
 struct vbd_poly_qt:
 dlm::fdst<cp6::vbd_3d_qd, cp6::poly_cd>,
   cp6::flag_vbd_qt,
@@ -54,8 +54,8 @@ struct avbd_test_state: state {
   void draw(sf::RenderWindow &window);
 
   enum qt_ids {
-    // liquid_qt,
-    // particle_qt,
+    liquid_qt,
+    particle_qt,
     poly_qt,
     qt_num
   };
@@ -63,8 +63,8 @@ struct avbd_test_state: state {
   enum reg_id { reg, reg_num };
 
   using reg_t = cp6::region_state<
-    // vbd_liquid_qt,
-    // vbd_particle_qt,
+    vbd_liquid_qt,
+    vbd_particle_qt,
     vbd_poly_qt
   >;
 
@@ -82,7 +82,7 @@ struct avbd_test_state: state {
       cp6::color_system,
       cp6::avbd_system,
       cp6::avbd_pcnt_fg
-      // cp6::avbd_tcnt_fg,
+      // cp6::avbd_tcnt_fg
       // cp6::avbd_pin_fg,
       // cp6::avbd_liquid_fg
     >;
@@ -116,6 +116,6 @@ struct avbd_test_state: state {
   }
 
   unsigned add_poly(vec2f pos, vector_poly shape);
-  // unsigned add_particle(vec2f pos, float radius);
+  unsigned add_particle(vec2f pos, float radius);
   // unsigned add_liquid_particle(vec2f pos);
 };

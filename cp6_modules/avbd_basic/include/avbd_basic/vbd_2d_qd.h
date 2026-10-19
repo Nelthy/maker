@@ -34,6 +34,13 @@ dlm::dst<
   vbd_2d_qd &qd() { return *this; }
 
   const vbd_2d_qd &qd() const { return *this; }
+
+  bool start_step(float h);
+  bool end_step(float h);
+  bool init_derivs(float h);
+
+  bool newton_step();
+  bool newton_step(const basic_color_data &color);
 };
 
 SET_COLOR_DATA_T(vbd_2d_qd, basic_color_data);
@@ -59,13 +66,39 @@ void vbd_start_step(cp6::vbd_2d_qd &qt, float h);
 void vbd_end_step(cp6::vbd_2d_qd &qt, float h);
 void init_derivs(cp6::vbd_2d_qd &qt, float h);
 
-inline vec2f transform_point(unsigned int q, const cp6::vbd_2d_qd &qt, const vec2f &point) {
-  return point + qt.q_old()[q];
+inline vec2f transform_point(
+  unsigned int q,
+  const cp6::vbd_2d_qd &qt,
+  const vec2f &point
+) {
+  return point + qt.q()[q];
 }
 
-inline vec2f inv_transform_point(unsigned int q, const cp6::vbd_2d_qd &qt, const vec2f &point) {
+inline vec2f inv_transform_point(
+  unsigned int q,
+  const cp6::vbd_2d_qd &qt,
+  const vec2f &point
+) {
+  return point - qt.q()[q];
+}
+
+inline vec2f inv_transform_point_old(
+  unsigned int q,
+  const cp6::vbd_2d_qd &qt,
+  const vec2f &point
+) {
   return point - qt.q_old()[q];
 }
 
-// inline vec2f translation(unsigned q, const cp6::vbd_2d_qd &qd) { return qd.q()[q]; };
+inline vec2f transform_point_old(
+  unsigned int q,
+  const cp6::vbd_2d_qd &qt,
+  const vec2f &point
+) {
+  return point + qt.q_old()[q];
+}
+
+inline vec2f translation(unsigned q, const cp6::vbd_2d_qd &qd) {
+  return qd.q()[q];
+};
 } // namespace cp6

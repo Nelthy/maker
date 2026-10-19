@@ -6,7 +6,6 @@
 #include "ds_utils.h"
 #include "maths.h"
 #include "vec_ds.h"
-#include <iostream>
 
 namespace cp6 {
 struct vbd_3d_qd:

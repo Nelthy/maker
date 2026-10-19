@@ -237,12 +237,15 @@ void avbd_test_state::update() {
       if (keybinds["Up"]->isheld) {
         m_view.setCenter(m_view.getCenter() - sf::Vector2f{0, 1 * dt * m_view.getSize().x});
       }
+
       if (keybinds["Down"]->isheld) {
         m_view.setCenter(m_view.getCenter() + sf::Vector2f{0, 1 * dt * m_view.getSize().x});
       }
+
       if (keybinds["Right"]->isheld) {
         m_view.setCenter(m_view.getCenter() + sf::Vector2f{2 * dt * m_view.getSize().y, 0});
       }
+
       if (keybinds["Left"]->isheld) {
         m_view.setCenter(m_view.getCenter() - sf::Vector2f{2 * dt * m_view.getSize().y, 0});
       }
@@ -307,7 +310,7 @@ void avbd_test_state::update() {
           unsigned q = add_poly(mouse_pos, vector_poly::square_shape(2, 2));
           get_qt<poly_qt>().mass()[q] *= 1000;
         } else if (i == 5) {
-          // add_particle(mouse_pos, 20);
+          add_particle(mouse_pos, 20);
         } else if (i == 6) {
           // add_liquid_particle(mouse_pos);
         }
@@ -389,10 +392,10 @@ void avbd_test_state::update() {
           get_qt<poly_qt>().a_ext()[q].y += 981;
         }
 
-        // for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
-        //   get_qt<particle_qt>().a_ext()[q].y += 981;
-        // }
-        //
+        for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
+          get_qt<particle_qt>().a_ext()[q].y += 981;
+        }
+
         // for (unsigned q = 0; q < get_qt<liquid_qt>().size(); q++) {
         //   get_qt<liquid_qt>().a_ext()[q].y += 981;
         // }
@@ -421,9 +424,9 @@ void avbd_test_state::update() {
             get_qt<poly_qt>().a_ext()[q].y = 981;
           }
 
-          // for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
-          //   get_qt<particle_qt>().a_ext()[q].y = 981;
-          // }
+          for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
+            get_qt<particle_qt>().a_ext()[q].y = 981;
+          }
           //
           // for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
           //   get_qt<liquid_qt>().a_ext()[q].y = 981;
@@ -679,16 +682,16 @@ unsigned avbd_test_state::add_poly(vec2f pos, vector_poly shape) {
   return q;
 }
 
-// unsigned avbd_test_state::add_particle(vec2f pos, float radius) {
-//   auto &qt = get_qt<particle_qt>();
-//   unsigned q = qt.size();
-//   grow<particle_qt>(get<reg_t>(m_phy), 1, {reg});
-//   qt.q()[q] = pos;
-//   qt.cd()[q].radius = radius;
-//   get_qt<particle_qt>().cd().calculate_constants(q, &qt.mass()[q].x);
-//   qt.mass()[q].y = qt.mass()[q].x;
-//   return q;
-// }
+unsigned avbd_test_state::add_particle(vec2f pos, float radius) {
+  auto &qt = get_qt<particle_qt>();
+  unsigned q = qt.size();
+  grow<particle_qt>(get<reg_t>(m_phy), 1, {reg});
+  qt.q()[q] = pos;
+  qt.cd()[q].radius = radius;
+  get_qt<particle_qt>().cd().calculate_constants(q, &qt.mass()[q].x);
+  qt.mass()[q].y = qt.mass()[q].x;
+  return q;
+}
 //
 // unsigned avbd_test_state::add_liquid_particle(vec2f pos) {
 //   auto &qt = get_qt<liquid_qt>();
