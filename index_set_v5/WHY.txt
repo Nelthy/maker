@@ -1,0 +1,4 @@
+This is a library I made for handling structs of arrays and the maps between them. 
+It's honestly a metaprogramming nightmare, and not my best code. 
+I drastically improved it while in the hosptial for my brother. However, this 
+is the version that I made this physics engine with originally.

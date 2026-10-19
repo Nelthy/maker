@@ -1,0 +1,60 @@
+#pragma once
+#include "cross_state.h"
+#include "operations.h"
+#include "region_state.h"
+#include "tuple_utils.h"
+
+namespace cp6 {
+template<typename... Ts>
+struct q_move_system_tt {
+
+  template<unsigned DST_QT, unsigned SRC_QT>
+  void move_q(unsigned dst_q, unsigned src_q, unsigned reg) {
+    static_assert(DST_QT != SRC_QT);
+
+    auto &reg_s = god::get<is_region_state>(*m_state);
+    auto &dst_qt = dlm::get<DST_QT>(reg_s);
+    const auto &src_qt = dlm::get<SRC_QT>(reg_s);
+
+    for_each_i<sizeof...(Ts)>([&]<size_t I> {
+      if constexpr (requires {
+                      god::get<I>(*m_state).template on_q_move<DST_QT, SRC_QT>(src_q, reg);
+                    }) {
+        god::get<I>(*m_state).template on_q_move<DST_QT, SRC_QT>(dst_q, src_q, reg);
+      }
+    });
+
+    move_q(dst_q, src_q, dst_qt, src_qt);
+  }
+
+  template<unsigned DST_QT, unsigned SRC_QT>
+  void append_qs(const std::vector<unsigned> &src_qs, unsigned reg) {
+    auto &reg_s = god::get<is_region_state>(*m_state);
+    unsigned dst_q_start = dlm::size<DST_QT>(reg_s, reg);
+
+    dlm::grow<DST_QT>(reg_s, src_qs.size(), reg);
+
+    for (unsigned i = dst_q_start; i < dst_q_start + src_qs.size(); i++) {
+      move_q<DST_QT, SRC_QT>(dst_q_start + i, src_qs[i], reg);
+    }
+
+    for (unsigned i = dst_q_start; i < dst_q_start + src_qs.size(); i++) {
+      dlm::null<SRC_QT>(reg_s, {src_qs[i], reg});
+    }
+
+    dlm::clear_null(reg_s);
+  }
+
+private:
+  friend class god::cross_state<Ts...>;
+
+  void init(god::cross_state<Ts...> &state) { m_state = &state; }
+
+  god::cross_state<Ts...> *m_state;
+};
+
+struct q_move_system {
+  template<typename... Ts>
+  using template_t = q_move_system_tt<Ts...>;
+};
+} // namespace cp6

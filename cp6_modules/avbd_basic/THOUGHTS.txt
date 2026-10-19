@@ -1,0 +1,84 @@
+Colors are complicated.
+  Colors describe what q indices can be updated at the same time without interfering with each other.
+
+  Colors only need to be made considering q q edges that have gs iterations between them. Every q belongs
+  to a single color
+  
+  Colors also need extra state to be useful. Either a q_to_data map or a data subset where the edges has a q
+  in the color.
+
+  A jacobi iteration is analogous to every q being the same color.
+
+  Do colors go across qt? 
+    They can, but I don't currently have that supported in the avbd_system.
+  
+  This is the cross qt color set that we need to dynamically build
+    [reg][c]<qt>[cq]
+  This is different than the one we currently have
+    [reg]<qt>[c][cq]
+
+  This means that each [c] needs to consider every qt.
+  It also means that there is only one type of color for the combination of all qts.
+  
+  How do we create this set?
+    We could create a color system that stores this state.
+    The output <qt>[cq] can be customized per qt.
+   
+    We could create a standard for pulling edge states out of force generators and 
+    use them to incrementally build the colors.
+      auto& edge_data = fg.get_edge_data<qt1, qt2>(reg);
+      build_color(m_color, edge_data);
+   
+   I don't know what edge state we'll have access to.
+    We may have:
+      [reg]<fg, qt1, qt1>[e]
+    or we may just have:
+      [reg]<fg, qt1, qt2>
+  
+  I don't know the enough about coloring algorithms to make appropriate state for them.
+    They may just require the edges, or they may require a q to q map.
+  
+
+
+Since qts that use gs require different state, let's split off gs functionality
+from the current collision systems.
+
+A lot of the stuff in here can be generalized if we convert it to a per color level.
+
+The impulse system system can probably be split off into it's own standalone module.
+
+Need a place to store the q to cnt map.
+  This data needs to be alligned with [reg]<pcqt, pcqt> for pcnts and the same
+  for tcnts if the qt wants it.
+
+  This data is also a function of just the qt, not the combonation of cd like the pcnt and tcnt
+  states, so I can't have it in there. 
+
+  The color sets are a promising option. Because they can be updated by any system, any state
+  can be added to them. This does mean that other systems that use colors must have their adjacencies
+  stored alongside the ones for pcnts. But this may not be a bad thing cache coherence wise. Generality
+  can be achieved by using inheritance.
+
+  Except colors aren't aligned with [reg]<pcqt, pcqt>. They are alligned with [reg]<qt>.
+  However, since the user can define the color to be anything they want, they could input the 
+  qt_num as a template argument. That way the color can define the rest of the <qt>. But
+  indexing into the correct adjacency would require that <qt> number in the implmentaiton functions,
+  and we simply don't have that state there.
+
+  The only way I can think of to do this is to pass in extra state.
+    
+    template<typename QD1, typename QD2, typename AVBD_TCNTS, typename COLOR_T, typename Q1_TO_CNT_T>
+    void add_derivs1(
+      QD1 &qd1,
+      const QD2 &qd2,
+      const AVBD_TCNTS &avbd_tcnts,
+      const COLOR_T &color,
+      const Q1_TO_CNT_T& q1_to_cnt
+    );
+
+  But how do I store and update this state? It's dependent on the pcnt and tcnt system, but isn't aligned with
+  either one...We could align it with [reg]<qt, qt> and share it among all states. Updating could be 
+  done by pulling in pcnt or tnct state and calling in a user defined function, but the state pulled isn't definite...
+  actually it can be if we pull in the cnt state. 
+
+  

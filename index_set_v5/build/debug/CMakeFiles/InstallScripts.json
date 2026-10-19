@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/nelthy/Repos/maker/index_set_v5/build/debug/cmake_install.cmake",
+		"/Users/nelthy/Repos/maker/index_set_v5/build/debug/index_set_b/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

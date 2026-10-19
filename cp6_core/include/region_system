@@ -1,0 +1,139 @@
+#pragma once
+#include "aabb.h"
+#include "cross_state.h"
+#include "data_set_tuple.h"
+#include "ds_utils.h"
+#include "region_state.h"
+#include "tuple_utils.h"
+#include <ckey.h>
+#include <external_perm.h>
+#include <perm_arr.h>
+#include <perm_map.h>
+#include <relay/pointer_relay_ds.h>
+#include <vec2.h>
+#include <vec_bundle_ds.h>
+#include <vec_ds.h>
+
+namespace cp6 {
+template<typename... Ts>
+struct region_system_tt;
+
+struct region_system:
+  dlm::ext<
+  dlm::perm<// [reg]
+    dlm::vec_ds<aabbf>,
+    dlm::vec_ds<vec2f>
+  >
+  >
+{
+  DEFINE_DS_FIELD((0), bounds);
+  DEFINE_DS_FIELD((1), origins);
+
+  template<typename... Ts>
+  using template_t = region_system_tt<Ts...>;
+};
+} // namespace cp6
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// region_system_tt definition
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace cp6 {
+template<rank_t QT, typename... Ts>
+struct qt_reg_perm_wrapper;
+
+template<typename... Ts>
+struct region_system_tt: region_system {
+  static constexpr unsigned qt_num = get_qt_num<Ts...>();
+
+  void init(god::cross_state<Ts...> &state) {
+    m_state = &state;
+    auto &qs = god::get<is_region_state>(state);
+    qs.add_r1_external(m_q_counter);
+    qs.add_r1_external(static_cast<region_system &>(*this));
+    for_each_i<qt_num>([&]<size_t QT> {
+      qs.template add_r2_external<QT>(m_q_pointers, dlm::ckey<0>{});
+      m_q_pointers.template get<QT, 1>().init(
+        // breaks strict aliasing, but it should be fine
+        *reinterpret_cast<qt_reg_perm_wrapper<QT, Ts...> *>(this)
+      );
+    });
+  }
+
+  void update();
+  void merge_regions(unsigned reg_dst, unsigned reg_src);
+  void split_region(unsigned reg);
+
+protected:
+  // these counters and pointers exist so the region auto nulls when all of the coordinates are
+  // removed from it.
+
+  struct reg_q_counter_set:
+  dlm::index_set<dlm::ext<dlm::perm<dlm::dst<dlm::vec_ds<unsigned>, dlm::vec_ds<unsigned>>>>> {
+    DEFINE_DS_FIELD((0), reg_q_num);
+    DEFINE_DS_FIELD((1), reg_null_num);
+  } m_q_counter;
+
+  dlm::index_set<std::remove_pointer_t<decltype([]<size_t... QT>(std::index_sequence<QT...>) {
+    return (dlm::ext<dlm::perm<
+              dlm::size_ds,
+              dlm::ext<dlm::perm<dlm::dst<
+                dlm::comp_ds<dlm::vec_ds<dlm::size_ds>>,
+                dlm::pointer_relay_ds<qt_reg_perm_wrapper<QT, Ts...>, 2>
+              >>>...
+            >> *){};
+  }(std::make_index_sequence<qt_num>{}))>>
+    m_q_pointers;
+
+  god::cross_state<Ts...> *m_state;
+};
+
+template<rank_t QT, typename... Ts>
+struct qt_reg_perm_wrapper: region_system_tt<Ts...> {
+  using region_system_tt<Ts...>::m_q_counter;
+  using region_system_tt<Ts...>::m_q_pointers;
+  using region_system_tt<Ts...>::m_state;
+
+  template<char RANK>
+  void on_null(dlm::ikey<RANK> key) {
+    if constexpr (RANK == 2) {
+      unsigned reg = key[0];
+      m_q_counter.reg_null_num()[reg]++;
+      if (m_q_counter.reg_null_num()[reg] == m_q_counter.reg_q_num()[reg]) {
+        god::get<is_region_state>(*m_state).null(reg);
+      }
+    }
+  }
+
+  template<char RANK>
+  void on_resize(unsigned new_size, dlm::ikey<RANK> key) {
+    if constexpr (RANK == 1) {
+      m_q_counter.reg_q_num()[key[0]] += (int)new_size - (int)m_q_pointers.template size<QT>(key);
+    }
+  }
+};
+
+} // namespace cp6
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// large region_system_tt function definitions
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace cp6 {
+
+template<typename... Ts>
+void region_system_tt<Ts...>::update() {
+  static_assert(false, "function not defined");
+}
+
+template<typename... Ts>
+void region_system_tt<Ts...>::merge_regions(unsigned reg_dst, unsigned reg_src) {
+  static_assert(false, "function not defined");
+}
+
+template<typename... Ts>
+void region_system_tt<Ts...>::split_region(unsigned reg) {
+  static_assert(false, "function not defined");
+}
+
+} // namespace cp6

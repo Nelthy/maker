@@ -1,0 +1,57 @@
+#pragma once
+#include "basic_types.h"
+#include <type_traits>
+
+namespace dlm {
+
+template<typename DS, rank_t INSERT_RANK, rank_t INSERT_VALUE>
+class insert_wrap: public DS {
+  auto &operator[](unsigned i) {
+    if constexpr (INSERT_RANK == 0) {
+      return DS::operator[](i)[INSERT_VALUE];
+    } else {
+      using value_type = std::decay_t<decltype(DS::operator[](i))>;
+
+      union pun {
+        insert_wrap<value_type, INSERT_RANK - 1, INSERT_VALUE> *a;
+        value_type *b;
+      } pun;
+
+      pun.a = &DS::operator[](i);
+      return *pun.b;
+    }
+  }
+};
+
+template<rank_t INSERT_RANK, typename DS>
+class perm_insert {
+  template<rank_t P>
+  auto &get() {
+    union pun {
+      using value_type = std::decay_t<decltype(DS::operator[](P))>;
+      insert_wrap<value_type, INSERT_RANK - 1, P> *a;
+      value_type *b;
+
+    } pun;
+
+    pun.b = &m_data_set[P];
+
+    return *pun.a;
+  }
+
+private:
+  DS m_data_set;
+};
+} // namespace dlm
+
+/*
+  reduces the rank of the data set by one and replaces
+  the index at the insert with the permute
+
+  perm_insert<0, arr_ds<4, vec_ds<float, 2>>> p;
+  p.get<3>()[a][b] == [3][a][b]
+  perm_insert<1, vec_ds<arr_ds<4, vec_ds<float>>> p;
+  p.get<3>()[a][b] == [a][3][b]
+  p.get<3>()[{a, b}] == [{a, 3, b}]
+
+*/

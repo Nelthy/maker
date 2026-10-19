@@ -1,0 +1,21 @@
+# ninja log v6
+1	11	1792436967989051669	/Users/nelthy/Repos/maker/index_set_v5/build/debug/CMakeFiles/cmake.verify_globs	3e485c4bcce48598
+13	814	1792436968001113892	CMakeFiles/index_set_test.dir/src/merge_keys_test.cpp.o	4aa34a3d9c6e21c2
+13	823	1792436968000860848	CMakeFiles/index_set_test.dir/src/main.cpp.o	454e5b67654c45a
+14	833	1792436968001306977	CMakeFiles/index_set_test.dir/src/perm_arr_test.cpp.o	e084afca8c6476ef
+11	845	1792436967998639164	CMakeFiles/index_set_test.dir/src/ckey_test.cpp.o	101b02c314ffdd14
+16	864	1792436968004082083	CMakeFiles/index_set_test.dir/src/relay_tests/pointer_relay_test.cpp.o	8ff6fba3e0bdceb
+16	894	1792436968003390119	CMakeFiles/index_set_test.dir/src/reinsert_test.cpp.o	8b90ddee23e2df44
+11	895	1792436967998842040	CMakeFiles/index_set_test.dir/src/ikey_test.cpp.o	ae87e22ef8ae2c0d
+12	959	1792436967999357586	CMakeFiles/index_set_test.dir/src/index_map_tests/merge_key_wrap_test.cpp.o	a33800149843a0ce
+14	977	1792436968002133900	CMakeFiles/index_set_test.dir/src/perm_tuple_test.cpp.o	370bbd80b350f533
+11	978	1792436967998976541	CMakeFiles/index_set_test.dir/src/index_map_tests/dmap_test.cpp.o	1e72f89954a3a6e5
+12	983	1792436967999983216	CMakeFiles/index_set_test.dir/src/index_set_test.cpp.o	8cf87e9a626a253b
+12	1023	1792436967999719839	CMakeFiles/index_set_test.dir/src/index_map_tests/multi_dmap_test.cpp.o	ce064cf85d226ea5
+12	1052	1792436967999228127	CMakeFiles/index_set_test.dir/src/index_map_tests/imap_test.cpp.o	ad3e65a101f50c5b
+823	1268	1792436968810682911	CMakeFiles/index_set_test.dir/src/shift_set_remove_queue_test.cpp.o	1ee9f593c7fe2c07
+845	1283	1792436968833061427	CMakeFiles/index_set_test.dir/src/vec_ds_test.cpp.o	35a6de10957e7b6c
+815	1284	1792436968802666429	CMakeFiles/index_set_test.dir/src/set_remove_queue_ds_test.cpp.o	8c707c9f4d06eeb0
+14	1310	1792436968001481645	CMakeFiles/index_set_test.dir/src/perm_map_test.cpp.o	cd374cda424a3f36
+833	1372	1792436968820464866	CMakeFiles/index_set_test.dir/src/sync_ds_test.cpp.o	8efdf0ed7b32a70b
+1372	1410	1792436969360142768	index_set_test	127e7250600c4ed6

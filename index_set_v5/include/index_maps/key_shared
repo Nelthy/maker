@@ -1,0 +1,58 @@
+#pragma once
+
+#include "basic_types.h"
+#include "ds_modifier.h"
+#include "ikey.h"
+#include <vector>
+
+namespace dlm {
+template<rank_t RANK, rank_t INV_RANK, typename SHARED_STORE_T, index_t SHARED_I>
+class key_shared {
+public:
+  static constexpr rank_t rank = RANK;
+  static constexpr rank_t inv_rank = INV_RANK;
+
+  template<rank_t KEY_RANK>
+  unsigned size(ikey<KEY_RANK> key) const {
+    return m_shared_storage->size(key);
+  }
+
+  ikey<inv_rank> get_inverse(ikey<rank> key) const {
+    return m_shared_storage->template get_key<SHARED_I>(key);
+  }
+
+  bool is_0_valid(ikey<rank> key) const {
+    return m_shared_storage->template is_0_valid<SHARED_I>(key);
+  }
+
+  void set_inverse(ikey<rank> key, ikey<inv_rank> value) {
+    return m_shared_storage->template set_key<SHARED_I>(key, value);
+  };
+
+  void swap_keys(std::vector<ikey<inv_rank>> &src, const ikey<rank - 1> &dst) {
+    ds_modifier::resize(*m_shared_storage, src.size(), dst);
+    for (unsigned i = 0; i < src.size(); i++) {
+      m_shared_storage->template set_key<SHARED_I>(dst.add_end(i), src[i]);
+    }
+  };
+
+  void init_store(SHARED_STORE_T &shared_storage) {
+    assert(!(m_shared_storage));
+    m_shared_storage = &shared_storage;
+  }
+
+private:
+  friend class ds_modifier;
+
+  template<rank_t KEY_RANK>
+  void resize(unsigned new_size, ikey<KEY_RANK> key) {}
+
+  template<rank_t KEY_RANK>
+  void swap(ikey<KEY_RANK> a, ikey<KEY_RANK> b) {}
+
+  template<rank_t KEY_RANK>
+  void move(ikey<KEY_RANK> dst, ikey<KEY_RANK> src) {}
+
+  SHARED_STORE_T *m_shared_storage = nullptr;
+};
+} // namespace dlm

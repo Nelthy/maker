@@ -1,0 +1,109 @@
+#include "index_map_tests/key_shared_test.h"
+#include "ikey.h"
+#include "index_maps/base_map.h"
+#include "index_maps/dmap.h"
+#include "index_maps/inverse_test.h"
+#include "index_maps/key_shared.h"
+#include "index_maps/key_vec.h"
+#include "perm.h"
+#include "print_functions.h"
+#include "test_common.h"
+#include "vec_ds.h"
+
+struct key_pair {
+  dlm::ikey<1> key0;
+  dlm::ikey<2> key1;
+};
+
+struct test_shared_storage: dlm::vec_ds<key_pair> {
+  template<unsigned I>
+  auto get_key(unsigned i) const {
+    if constexpr (I == 0) {
+      return this->operator[](i).key0;
+    } else {
+      return this->operator[](i).key1;
+    }
+  }
+
+  template<unsigned I, typename K>
+  void set_key(unsigned i, K key) {
+    if constexpr (I == 0) {
+      this->operator[](i).key0 = key;
+    } else {
+      this->operator[](i).key1 = key;
+    }
+  }
+
+  template<unsigned I>
+  bool is_0_valid(unsigned i) {
+    if constexpr (I == 0) {
+      return this->operator[](i).key0.is_0_valid();
+    } else {
+      return this->operator[](i).key1.is_0_valid();
+    }
+  }
+};
+
+void key_shared_test() {
+  LOG_FUNC_NAME();
+  dlm::perm<
+    test_shared_storage,
+    dlm::dmap<dlm::key_shared<1, 1, test_shared_storage, 0>>,
+    dlm::dmap<dlm::key_shared<1, 2, test_shared_storage, 1>>
+  >
+    a;
+  dlm::perm<dlm::dmap<dlm::key_vec<1, 1>>> b;
+  dlm::perm<dlm::perm<dlm::dmap<dlm::key_vec<2, 1>>>> c;
+
+  dlm::init_maps(a, b, dlm::ckey<1>{}, dlm::ckey<0>{});
+  dlm::init_maps(a, c, dlm::ckey<2>{}, dlm::ckey<0, 0>{});
+
+  get<1>(a).init_store(get<0>(a));
+  get<2>(a).init_store(get<0>(a));
+
+  grow(a, 3);
+  test_assert((a.size() == 3));
+  get<1>(a).sublink(dlm::ikey{0}, dlm::ikey{});
+  get<1>(a).sublink(dlm::ikey{1}, dlm::ikey{});
+  get<1>(a).sublink(dlm::ikey{2}, dlm::ikey{});
+  test_assert(b.size() == 3);
+
+  grow(c, 3);
+  get<2>(a).sublink(dlm::ikey{0}, dlm::ikey{0});
+  get<2>(a).sublink(dlm::ikey{1}, dlm::ikey{1});
+  get<2>(a).sublink(dlm::ikey{2}, dlm::ikey{1});
+
+  test_assert(dlm::size<0>(c, {0}) == 1);
+  test_assert(dlm::size<0>(c, {1}) == 2);
+  test_assert(dlm::size<0>(c, {2}) == 0);
+
+  test_assert((inverse_test(get<1>(a), get<0>(b)), true));
+  test_assert((inverse_test(get<2>(a), get<0, 0>(c), true)));
+  swap(a, 0, 2);
+  test_assert((inverse_test(get<1>(a), get<0>(b), true)));
+  test_assert((inverse_test(get<2>(a), get<0, 0>(c), true)));
+
+  print_map(get<1>(a));
+  print_map(get<2>(a));
+
+  for (unsigned i = 0; i < a.size(); i++) {
+    std::cout << get<0>(a)[i].key0 << ", " << get<0>(a)[i].key1 << std::endl;
+  }
+}
+/*
+  our current sharing of keys fucks up the order of operations with swap and move.
+  Whatever calls the move operation on the storage must also be the map.
+  
+  So, we need something like:
+    multi_map<store_t, rank_t...INV_RANKS>;
+  But this requires a standard that takes in a compile time index for all operations.
+  
+  Or a way to hide this compile time information away. We could do this by creating a proxy
+  map type that the non-multi maps link to.
+   
+
+
+
+
+
+*/

@@ -1,0 +1,59 @@
+#include "basic_operation_perf_test.h"
+#include "ds_modifier.h"
+#include "test_common.h"
+#include "vec_ds.h"
+#include <PA.hpp>
+
+using namespace dlm;
+
+void r1_move_swap_perf_test() {
+  vec_ds<float> v;
+  unsigned sum = 0;
+  ds_modifier::resize(v, 100000, ikey{});
+  for (unsigned i = 0; i < 10000; i++) {
+    // PA::instance().start("swap");
+    // for (unsigned i = 0; i < v.size(); i++) {
+    //   // ds_modifier::swap(v, 0, i, ikey{}); // 58 us
+    //   // ds_modifier::swap(v, v, ikey{0}, ikey{i}); // 58 us
+    //   ds_modifier::swap(v, ikey{0}, ikey{i}); // 58 us
+    // }
+    // PA::instance().end("swap");
+
+    // PA::instance().start("move");
+    // for (unsigned i = 0; i < v.size(); i++) {
+    //   // ds_modifier::move(v, 0, i, ikey{}); // 23 us
+    //   // ds_modifier::move(v, ikey{0}, ikey{i}); // 23 us
+    //   // ds_modifier::move(v, v, ikey{0}, ikey{i}); // 23 us
+    //   ds_modifier::move(v, ikey{0}, ikey{i}, 1); // 26 us
+    // }
+    // PA::instance().end("move");
+
+    PA::instance().start("block move");
+    unsigned block_size = 100;
+    for (unsigned i = 0; i < v.size() - block_size; i++) {
+      for (unsigned j = 0; j < block_size; j++) {
+        // ds_modifier::move(v, 0 + j, i + j, ikey{}); // 393 us
+        // ds_modifier::move(v, ikey{0 + j}, ikey{i + j}); // 391 us
+        // ds_modifier::move(v, v, ikey{0 + j}, ikey{i + j}); // 392 us
+      }
+      // ds_modifier::move(v, ikey{0}, ikey{i}, block_size); // 387-401 us
+    }
+
+    PA::instance().end("block move");
+  }
+
+  for (unsigned i = 0; i < 10; i++) {
+    sum += v[i];
+  }
+  PA::instance().print_all();
+
+  LOG(sum);
+}
+
+void r2_move_swap_perf_test() {
+  
+}
+
+void basic_operation_perf_test() {
+  r1_move_swap_perf_test(); 
+}

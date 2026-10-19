@@ -1,0 +1,110 @@
+[
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/ckey_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/ckey_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/ckey_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/ckey_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/ikey_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/ikey_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/ikey_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/ikey_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/index_map_tests/dmap_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/dmap_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/dmap_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/index_map_tests/dmap_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/index_map_tests/imap_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/imap_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/imap_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/index_map_tests/imap_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/index_map_tests/merge_key_wrap_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/merge_key_wrap_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/merge_key_wrap_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/index_map_tests/merge_key_wrap_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/index_map_tests/multi_dmap_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/multi_dmap_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/index_map_tests/multi_dmap_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/index_map_tests/multi_dmap_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/index_set_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/index_set_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/index_set_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/index_set_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/main.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/main.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/main.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/main.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/merge_keys_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/merge_keys_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/merge_keys_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/merge_keys_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/perm_arr_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/perm_arr_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/perm_arr_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/perm_arr_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/perm_map_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/perm_map_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/perm_map_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/perm_map_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/perm_tuple_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/perm_tuple_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/perm_tuple_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/perm_tuple_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/reinsert_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/reinsert_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/reinsert_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/reinsert_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/relay_tests/pointer_relay_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/relay_tests/pointer_relay_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/relay_tests/pointer_relay_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/relay_tests/pointer_relay_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/set_remove_queue_ds_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/set_remove_queue_ds_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/set_remove_queue_ds_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/set_remove_queue_ds_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/shift_set_remove_queue_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/shift_set_remove_queue_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/shift_set_remove_queue_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/shift_set_remove_queue_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/sync_ds_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/sync_ds_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/sync_ds_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/sync_ds_test.cpp.o"
+},
+{
+  "directory": "/Users/nelthy/Repos/maker/index_set_v5/build/debug",
+  "command": "/usr/bin/clang++ -I/Users/nelthy/Repos/maker/index_set_v5/test/include -I/Users/nelthy/Repos/maker/index_set_v5/include -g -std=gnu++20 -arch arm64 -o CMakeFiles/index_set_test.dir/src/vec_ds_test.cpp.o -c /Users/nelthy/Repos/maker/index_set_v5/test/src/vec_ds_test.cpp",
+  "file": "/Users/nelthy/Repos/maker/index_set_v5/test/src/vec_ds_test.cpp",
+  "output": "CMakeFiles/index_set_test.dir/src/vec_ds_test.cpp.o"
+}
+]
