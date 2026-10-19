@@ -12,7 +12,7 @@
 
 namespace cp6 {
 template<typename TW>
-struct avbd_tnct_fg_tt: flag_avbd_jacobi_fg {
+struct avbd_temp_cnt_force_generator_tt: flag_avbd_jacobi_fg {
 
   static constexpr auto vbd_qt_to_qt = generate_tuple_indirection<
     get_matching_ts<is_vbd_qt, qt_ts<TW>>,
@@ -23,6 +23,7 @@ struct avbd_tnct_fg_tt: flag_avbd_jacobi_fg {
     qt_ts<TW>,
     get_matching_ts<is_vbd_qt, qt_ts<TW>>
   >();
+
   static constexpr unsigned
     vbd_qt_num = get_matching_num<is_vbd_qt, qt_ts<TW>>();
 
@@ -91,47 +92,56 @@ private:
   };
 
   bool add_derivs(unsigned reg) {
-    // if constexpr (!uses_gs_for_tcnt<qt_t<vbd_qt_to_qt[VBD_QT], TW>>::value) {
-    //   auto &np_s = get<narrowphase_system>(*m_state);
-    //   auto &reg_s = get<is_region_state>(*m_state);
-    //
-    //   for_each_i<vbd_qt_num - VBD_QT>([&]<size_t I> {
-    //     static constexpr unsigned vbd_qt1 = VBD_QT;
-    //     static constexpr unsigned vbd_qt2 = VBD_QT + I;
-    //     static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
-    //     static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
-    //
-    //     if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) &&
-    //     has_collision_force<qt1, qt2>())
-    //     {
-    //       auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
-    //       auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
-    //       auto &avbd_tcnt_data = m_avbd_tcnt_set.template
-    //       avbd_tcnt_data<vbd_qt1, vbd_qt2>()[reg];
-    //
-    //       add_derivs1(qd1_s, qd2_s, avbd_tcnt_data);
-    //     }
-    //   });
-    //
-    //   for_each_i<VBD_QT + 1>([&]<size_t OTHER_VBD_QT> {
-    //     static constexpr unsigned vbd_qt1 = OTHER_VBD_QT;
-    //     static constexpr unsigned vbd_qt2 = VBD_QT;
-    //     static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
-    //     static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
-    //
-    //     if constexpr ((uses_tcnt<qt1>() || uses_tcnt<qt2>()) &&
-    //     has_collision_force<qt1, qt2>())
-    //     {
-    //       auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
-    //       auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
-    //       auto &avbd_tcnt_data = m_avbd_tcnt_set.template
-    //       avbd_tcnt_data<vbd_qt1, vbd_qt2>()[reg];
-    //
-    //       add_derivs2(qd1_s, qd2_s, avbd_tcnt_data);
-    //     }
-    //   });
-    // }
-    // // static_assert(false, "not implemented");
+    for_each_i<vbd_qt_num>([&]<unsigned VBD_QT> {
+      if constexpr (!uses_gs_for_avbd_tcnt<
+                      qt_t<vbd_qt_to_qt[VBD_QT], TW>
+                    >::value) {
+        auto &np_s = get<narrowphase_system>(*m_state);
+        auto &reg_s = get<is_region_state>(*m_state);
+
+        for_each_i<vbd_qt_num - VBD_QT>([&]<size_t I> {
+          static constexpr unsigned vbd_qt1 = VBD_QT;
+          static constexpr unsigned vbd_qt2 = VBD_QT + I;
+          static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
+          static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
+
+          if constexpr (
+            (uses_tcnt<qt1>() || uses_tcnt<qt2>())
+            && has_collision_force<qt1, qt2>()
+          ) {
+            auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
+            auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
+            auto &avbd_tcnt_data = m_avbd_tcnt_set.template avbd_tcnt_data<
+              vbd_qt1,
+              vbd_qt2
+            >()[reg];
+
+            add_derivs1(qd1_s, qd2_s, avbd_tcnt_data);
+          }
+        });
+
+        for_each_i<VBD_QT + 1>([&]<size_t OTHER_VBD_QT> {
+          static constexpr unsigned vbd_qt1 = OTHER_VBD_QT;
+          static constexpr unsigned vbd_qt2 = VBD_QT;
+          static constexpr unsigned qt1 = vbd_qt_to_qt[vbd_qt1];
+          static constexpr unsigned qt2 = vbd_qt_to_qt[vbd_qt2];
+
+          if constexpr (
+            (uses_tcnt<qt1>() || uses_tcnt<qt2>())
+            && has_collision_force<qt1, qt2>()
+          ) {
+            auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
+            auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
+            auto &avbd_tcnt_data = m_avbd_tcnt_set.template avbd_tcnt_data<
+              vbd_qt1,
+              vbd_qt2
+            >()[reg];
+
+            add_derivs2(qd1_s, qd2_s, avbd_tcnt_data);
+          }
+        });
+      }
+    });
     return true;
   }
 
@@ -236,6 +246,6 @@ struct avbd_tcnt_fg {
   static constexpr bool vbd_jacobi_fg = true;
 
   template<typename TW>
-  using template_t = avbd_tnct_fg_tt<TW>;
+  using template_t = avbd_temp_cnt_force_generator_tt<TW>;
 };
 } // namespace cp6

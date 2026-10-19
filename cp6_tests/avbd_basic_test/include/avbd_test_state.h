@@ -45,8 +45,6 @@ dlm::fdst<cp6::vbd_3d_qd, cp6::poly_cd>,
   static constexpr bool use_impulses = true;
 };
 
-struct avbd_test_state;
-
 struct avbd_test_state: state {
 
   avbd_test_state(state_man &man);
@@ -59,7 +57,7 @@ struct avbd_test_state: state {
     poly_qt,
     qt_num
   };
-
+  // There's only one region in this demo
   enum reg_id { reg, reg_num };
 
   using reg_t = cp6::region_state<
@@ -81,8 +79,8 @@ struct avbd_test_state: state {
       // avbd
       cp6::color_system,
       cp6::avbd_system,
-      cp6::avbd_pcnt_fg
-      // cp6::avbd_tcnt_fg
+      cp6::avbd_pcnt_fg,
+      cp6::avbd_tcnt_fg
       // cp6::avbd_pin_fg,
       // cp6::avbd_liquid_fg
     >;

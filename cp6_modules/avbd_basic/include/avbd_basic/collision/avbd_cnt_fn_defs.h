@@ -137,7 +137,7 @@ inline void init_avbd_state_impl(
   // std::cout << "diff: " << C01 - C02 << std::endl;
   dst_contact.C0 = C01;
   // The basic implmementation currently has no way to mark cnt1 as changing places, so we just
-  // have a threshold
+  // have a threshold for how far the contact can move
   dst_contact.stick =
     (abs(dst_contact.lambda[1]) <= abs(dst_contact.lambda[0] * cp6::cnt_friction_coef)) &&
     (abs(dst_contact.C0[1]) < cnt_stick_thresh) &&
@@ -276,14 +276,14 @@ inline void init_avbd_state(
 template<typename QD1, typename QD2>
 inline void add_derivs1(QD1 &qd1, const QD2 &qd2, const avbd_contact_1p_set &cnts) {
   for (unsigned cnt = 0; cnt < cnts.size(); cnt++) {
-    add_derivs_impl<true>(qd1, qd2, cnts[cnt].q1, cnts[cnt].q2, cnts[cnt], cnts.alpha);
+    add_derivs_impl<true>(qd1, qd2, cnts[cnt].q1, cnts[cnt].q2, cnts[cnt], cnts);
   }
 }
 
 template<typename QD1, typename QD2>
 inline void add_derivs2(const QD1 &qd1, QD2 &qd2, const avbd_contact_1p_set &cnts) {
   for (unsigned cnt = 0; cnt < cnts.size(); cnt++) {
-    add_derivs_impl<false>(qd2, qd1, cnts[cnt].q2, cnts[cnt].q1, cnts[cnt], cnts.alpha);
+    add_derivs_impl<false>(qd2, qd1, cnts[cnt].q2, cnts[cnt].q1, cnts[cnt], cnts);
   }
 }
 
