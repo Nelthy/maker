@@ -1,11 +1,11 @@
 #pragma once
 
 namespace cp6 {
-template<typename CD1_T, typename CD2_T, typename POTCOLS_T, typename COLS_T>
-bool narrowphase(const CD1_T &cd1, const CD2_T &cd2, const POTCOLS_T &potcols, COLS_T &dst_cols);
-
-template<typename CD1_T, typename CD2_T, typename COLS_T>
-bool narrowphase_update(const CD1_T &cd1, const CD2_T &cd2, COLS_T &dst_cols);
+// template<typename CD1_T, typename CD2_T, typename POTCOLS_T, typename COLS_T>
+// bool narrowphase(const CD1_T &cd1, const CD2_T &cd2, const POTCOLS_T &potcols, COLS_T &dst_cols);
+//
+// template<typename CD1_T, typename CD2_T, typename COLS_T>
+// bool narrowphase_update(const CD1_T &cd1, const CD2_T &cd2, COLS_T &dst_cols);
 
 template<typename TCNTS_T, typename PCNTS_T>
 bool copy_tcnt_to_pcnt(const TCNTS_T &tcnts, unsigned pcnt_start, PCNTS_T &pcnts);

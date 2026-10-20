@@ -12,6 +12,6 @@ add_library(impulse INTERFACE)
 target_include_directories(impulse
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(avbd INTERFACE cp6_core)
+target_link_libraries(impulse INTERFACE avbd)
 
 

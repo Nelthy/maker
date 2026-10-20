@@ -1,15 +1,21 @@
 #pragma once
+
+#include "collision_basic/basic_broadphase.h"
+#include "collision_basic/basic_broadphase_defs.h"
+
+#include "impulse/impulse_system.h"
+
 #include "avbd/avbd_flags.h"
 #include "avbd/avbd_system.h"
 #include "avbd/collision/avbd_pcnt_fg.h"
 #include "avbd/collision/avbd_tcnt_fg.h"
 #include "avbd/color_system.h"
+#include "avbd_basic/constraint/avbd_pin_fg.h"
 #include "avbd_basic/liquid/avbd_liquid_fg.h"
 #include "avbd_basic/vbd_3d_qd.h"
 #include "collision/narrowphase_system.h"
 #include "collision/pcnt_system.h"
 #include "collision_basic/basic_broadphase.h"
-#include "avbd_basic/constraint/avbd_pin_fg.h"
 #include "god_state.h"
 #include "region_state.h"
 #include "state.h"
@@ -17,11 +23,10 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/View.hpp>
 #include <consistant_caller.h>
+
 // needed for state definition
 #include <avbd_basic/collision/avbd_cnt_type_defs.h>
 #include <collision_basic/collision_combo_defs.h>
-
-
 
 struct vbd_liquid_qt:
 dlm::fdst<cp6::vbd_liquid_qd, cp6::circle_cd>,
@@ -53,27 +58,19 @@ struct avbd_test_state: state {
   void update();
   void draw(sf::RenderWindow &window);
 
-  enum qt_ids {
-    liquid_qt,
-    particle_qt,
-    poly_qt,
-    qt_num
-  };
+  enum qt_ids { liquid_qt, particle_qt, poly_qt, qt_num };
+
   // There's only one region in this demo
   enum reg_id { reg, reg_num };
 
-  using reg_t = cp6::region_state<
-    vbd_liquid_qt,
-    vbd_particle_qt,
-    vbd_poly_qt
-  >;
+  using reg_t = cp6::region_state<vbd_liquid_qt, vbd_particle_qt, vbd_poly_qt>;
 
   // type wrapper
   struct tw {
     using types = std::tuple<
       reg_t,
       // collision
-      cp6::basic_broadphase,
+      cp6::sap_broadphase,
       cp6::narrowphase_system,
       cp6::phase_link_system,
       cp6::pcnt_system,
@@ -85,6 +82,7 @@ struct avbd_test_state: state {
       cp6::avbd_tcnt_fg,
       cp6::avbd_pin_fg,
       cp6::avbd_liquid_fg
+      // cp6::impulse_system
     >;
   };
 
@@ -95,7 +93,7 @@ struct avbd_test_state: state {
 
   float liquid_particle_radius = 10;
   float liquid_kernal_collider_radius = 30;
-  
+
   bool is_mouse_grabbing = false;
 
   static constexpr unsigned color_color_num = 8;

@@ -28,7 +28,6 @@
 #include <SFML/Window/Mouse.hpp>
 #include <cstddef>
 #include <utility>
-
 void on_main_spin() {};
 
 template<unsigned QT>
@@ -368,7 +367,6 @@ void avbd_test_state::update() {
           }
 
           if (other_q != -1) {
-            assert(false);
             vec2f diff = get_qt<poly_qt>().q()[other_q].xy() - mouse_pos;
             get<cp6::avbd_pin_fg>(m_phy).add_pin<poly_qt, poly_qt>(
               reg,
@@ -451,7 +449,7 @@ void avbd_test_state::update() {
     }
 
     PA::inst().start("bp");
-    get<cp6::basic_broadphase>(m_phy).update(reg);
+    get<cp6::sap_broadphase>(m_phy).update(reg);
     PA::inst().end("bp");
 
     PA::inst().start("pl update");
@@ -531,7 +529,8 @@ void avbd_test_state::update() {
         // }
 
         get<cp6::avbd_system>(m_phy).end_step(reg, h);
-      } else {
+      }
+      else {
         for (unsigned i = 0; i < sub_steps; i++) {
           for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
             get_qt<poly_qt>().a_ext()[q].y = 981;

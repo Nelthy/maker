@@ -2,7 +2,7 @@
 #include <thread>
 
 namespace cp6 {
-void *thread_pool::add_task(func_t func, void *data) {
+void *thread_pool::add_task(func_t func, task_data data, bool start_immediately) {
   inst().list_mtx.lock();
 
   task *new_task = nullptr;
@@ -24,11 +24,45 @@ void *thread_pool::add_task(func_t func, void *data) {
   }
 
   task *old_first = inst().first.exchange(new_task);
-  if (old_first != nullptr) {
-    old_first->last = new_task;
-  }
+  if (old_first != nullptr) { old_first->last = new_task; }
   new_task->next = old_first;
-  new_task->state.store(task_state::idle);
+
+  if (start_immediately) {
+    new_task->state.store(task_state::idle);
+  } else {
+    new_task->state.store(task_state::done);
+  }
+
+  inst().list_mtx.unlock();
+  return new_task;
+}
+
+void *thread_pool::add_task() {
+  inst().list_mtx.lock();
+
+  task *new_task = nullptr;
+  if (inst().task_pool_first != nullptr) {
+    new_task = inst().task_pool_first.load();
+    inst().task_pool_first.store(new_task->next);
+
+    new_task->func = nullptr;
+    new_task->data = nullptr;
+    new_task->state = thread_pool::task_state::claimed;
+    new_task->next = nullptr;
+    new_task->last = nullptr;
+  }
+
+  if (new_task == nullptr) {
+    inst().created_task_num++;
+    new_task = new task{nullptr, nullptr};
+    new_task->state = task_state::claimed;
+  }
+
+  task *old_first = inst().first.exchange(new_task);
+  if (old_first != nullptr) { old_first->last = new_task; }
+  new_task->next = old_first;
+
+  new_task->state.store(task_state::done);
 
   inst().list_mtx.unlock();
   return new_task;
@@ -79,8 +113,7 @@ void thread_pool::stop_spinning() {
     inst().is_spinning = false;
     // wait for all the threads to start spinning
     for (uint32_t t = 0; t < inst().m_thread_states.size(); t++) {
-      while (inst().m_thread_states[t]->is_spinning.load() == false) {
-      };
+      while (inst().m_thread_states[t]->is_spinning.load() == false) {};
     }
 
     // tell all threads to stop spinning
@@ -90,8 +123,7 @@ void thread_pool::stop_spinning() {
 
     // wait for all the threads to stop spinning
     for (uint32_t t = 0; t < inst().m_thread_states.size(); t++) {
-      while (inst().m_thread_states[t]->is_spinning.load() == false) {
-      };
+      while (inst().m_thread_states[t]->is_spinning.load() == false) {};
     }
 
     // delete the thread states
@@ -108,13 +140,9 @@ bool thread_pool::has_handle(const void *handle) {
   while (true) {
     assert(curr->state.load() != task_state::in_task_pool);
 
-    if (curr == handle) {
-      return true;
-    }
+    if (curr == handle) { return true; }
 
-    if (curr == nullptr) {
-      return false;
-    }
+    if (curr == nullptr) { return false; }
 
     curr = curr->next;
     loop_num++;
@@ -143,7 +171,7 @@ void *thread_pool::main_help(void *start_task) {
   if (curr_task->state.compare_exchange_strong(expected, task_state::claimed)) {
     assert(curr_task->state.load() == task_state::claimed);
 
-    if (curr_task->func(curr_task->data)) {
+    if (curr_task->func(curr_task->data, 0)) {
       curr_task->state.store(task_state::done);
     } else {
       curr_task->state.store(task_state::idle);
@@ -174,12 +202,13 @@ void thread_pool::thread_spin(uint32_t tid) {
     if (curr_task->state.compare_exchange_strong(expected, task_state::claimed)) {
       assert(curr_task->state.load() == task_state::claimed);
 
-      if (curr_task->func(curr_task->data)) {
+      if (curr_task->func(curr_task->data, tid + 1)) {
         curr_task->state.store(task_state::done);
       } else {
         curr_task->state.store(task_state::idle);
       }
     }
+
     if (expected == task_state::in_task_pool) {
       curr_task = inst().first;
       continue;

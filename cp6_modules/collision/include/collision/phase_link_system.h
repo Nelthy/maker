@@ -13,8 +13,8 @@
 #include <type_traits>
 
 namespace cp6 {
-template<typename PCOLS, typename PHASE_LINKS>
-void cull_pcols(PCOLS &pcols, const PHASE_LINKS &phase_links);
+// template<typename PCOLS, typename PHASE_LINKS>
+// bool cull_pcols(PCOLS &pcols, const PHASE_LINKS &phase_links);
 
 template<typename TW>
 struct phase_link_system_tt {

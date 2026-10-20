@@ -9,5 +9,6 @@ target_include_directories(avbd_basic_test
 
 target_link_libraries(avbd_basic_test PUBLIC test_common)
 target_link_libraries(avbd_basic_test PUBLIC avbd_basic)
+target_link_libraries(avbd_basic_test PUBLIC impulse)
 target_link_libraries(avbd_basic_test PUBLIC collision_basic_draw)
 

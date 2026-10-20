@@ -231,7 +231,6 @@ protected:
   }
 
   bool start_step(unsigned reg, float h) {
-    assert(false);
     tri_apply<pfqt_num>([&]<size_t PFQT1, size_t PFQT2> {
       static constexpr unsigned qt1 = pfqt_to_qt[PFQT1];
       static constexpr unsigned qt2 = pfqt_to_qt[PFQT2];

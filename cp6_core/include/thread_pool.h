@@ -1,26 +1,62 @@
 #pragma once
-#include <vector>
 #include <atomic>
 #include <cassert>
 #include <cstdint>
+#include <mutex>
+#include <vector>
 
 namespace cp6 {
+struct task_data {
+  char data[8 + 4 + 3];
+
+  task_data() {};
+
+  task_data(void *ptr, uint32_t idx = 0) {
+    this->ptr() = ptr;
+    this->idx() = idx;
+  };
+
+  void *&ptr() { return *reinterpret_cast<void **>(&data); }
+  
+  template<typename T>
+  T &ptr_as() { return *(T*&)(*reinterpret_cast<void **>(&data)); }
+
+  uint32_t &idx() { return *reinterpret_cast<uint32_t *>(data + 8); }
+};
+
 class thread_pool {
 public:
-  using func_t = bool (*)(void *data);
+  using func_t = bool (*)(task_data data, uint32_t tid);
   [[nodiscard]]
-  static void *add_task(func_t func, void *data);
+  static void *add_task(func_t func, task_data data, bool start_immediately = true);
+  static void *add_task();
 
   static void remove_task(void *handle);
 
   static void start_spinning(unsigned thread_count);
 
   static bool is_done(const void *handle) {
-    static uint32_t current_loop = 0;
     task *ptask = (task *)handle;
-
     return ptask->state == task_state::done;
   };
+
+  static void restart_task(void *handle) {
+    task *ptask = (task *)handle;
+    assert(ptask->state == task_state::done);
+    ptask->state = task_state::idle;
+  };
+
+  static void set_task_func(void *handle, func_t func) {
+    task *ptask = (task *)handle;
+    assert(ptask->state == task_state::done);
+    ptask->func = func;
+  }
+
+  static void set_task_data(void *handle, void *data) {
+    task *ptask = (task *)handle;
+    assert(ptask->state == task_state::done);
+    ptask->data = data;
+  }
 
   static void stop_spinning();
 
@@ -43,7 +79,7 @@ public:
   /*
     usage:
       task* help_handle = nullptr;
-      while(!thread_pool::is_done(some_handle)){
+      while(...){
         help_handle = thread_pool::main_help(help_handle);
       }
 
@@ -62,7 +98,7 @@ private:
 
   struct task {
     func_t func = nullptr;
-    void *data = nullptr;
+    task_data data;
     std::atomic<task_state> state = task_state::null;
     std::atomic<task *> next = nullptr;
     std::atomic<task *> last = nullptr;
