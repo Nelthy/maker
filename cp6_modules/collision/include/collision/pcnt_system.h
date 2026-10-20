@@ -510,7 +510,7 @@ private:
   } m_q2_map;
 };
 
-struct pcnt_system: flag_phase_linker {
+struct pcnt_system {
   template<typename TW>
   using template_t = pcnt_system_tt<TW>;
 };

@@ -18,9 +18,9 @@ struct pair_force_state<is_pinqt, QD_A, QD_B> {
   using type = dlm::vec_ds<pin_data>;
 };
 
-template<typename... Ts>
-struct avbd_pin_fg_tt: pair_force_fg_tt<is_pinqt, Ts...>, flag_avbd_gs_fg {
-  using base = pair_force_fg_tt<is_pinqt, Ts...>;
+template<typename TW>
+struct avbd_pin_fg_tt: pair_force_fg_tt<is_pinqt, TW>, flag_avbd_gs_fg{
+  using base = pair_force_fg_tt<is_pinqt, TW>;
 
   template<unsigned QT_A, unsigned QT_B>
   void add_pin(unsigned reg, unsigned q_a, unsigned q_b, pin_data data) {
@@ -33,9 +33,8 @@ struct avbd_pin_fg_tt: pair_force_fg_tt<is_pinqt, Ts...>, flag_avbd_gs_fg {
   //   assert(false);
   // }
 };
-
-struct avbd_pin_fg {
-  template<typename... Ts>
-  using template_t = avbd_pin_fg_tt<Ts...>;
+struct avbd_pin_fg{
+  template<typename TW>
+  using template_t = avbd_pin_fg_tt<TW>;
 };
 } // namespace cp6

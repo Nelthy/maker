@@ -16,32 +16,42 @@
 namespace cp6 {
 template<typename T>
 struct uses_pcnt_jacobi_fg {
-  static constexpr bool value = uses_avbd_pcnt<T>::value && !uses_gs_for_avbd_pcnt<T>::value;
+  static constexpr bool value = uses_avbd_pcnt<T>::value
+                             && !uses_gs_for_avbd_pcnt<T>::value;
 };
 
 template<typename TW>
 struct avbd_pcnt_fg_tt: flag_avbd_jacobi_fg, flag_avbd_gs_fg {
 
-  static constexpr auto vbd_pcqt_to_qt =
-    generate_tuple_indirection<get_matching_ts<uses_avbd_pcnt, qt_ts<TW>>, qt_ts<TW>>();
+  static constexpr auto vbd_pcqt_to_qt = generate_tuple_indirection<
+    get_matching_ts<uses_avbd_pcnt, qt_ts<TW>>,
+    qt_ts<TW>
+  >();
 
-  static constexpr auto qt_to_vbd_pcqt =
-    generate_tuple_indirection<qt_ts<TW>, get_matching_ts<uses_avbd_pcnt, qt_ts<TW>>>();
+  static constexpr auto qt_to_vbd_pcqt = generate_tuple_indirection<
+    qt_ts<TW>,
+    get_matching_ts<uses_avbd_pcnt, qt_ts<TW>>
+  >();
 
-  static constexpr auto vbd_qt_to_qt =
-    generate_tuple_indirection<get_matching_ts<is_vbd_qt, qt_ts<TW>>, qt_ts<TW>>();
+  static constexpr auto vbd_qt_to_qt = generate_tuple_indirection<
+    get_matching_ts<is_vbd_qt, qt_ts<TW>>,
+    qt_ts<TW>
+  >();
 
   static constexpr auto vbd_qt_to_vbd_pcqt = generate_tuple_indirection<
     get_matching_ts<is_vbd_qt, qt_ts<TW>>,
     get_matching_ts<uses_avbd_pcnt, qt_ts<TW>>
   >();
-  static constexpr unsigned vbd_pcqt_num = get_matching_num<uses_avbd_pcnt, qt_ts<TW>>();
 
-  static_assert(vbd_pcqt_num > 0);
+  static constexpr unsigned
+    vbd_pcqt_num = get_matching_num<uses_avbd_pcnt, qt_ts<TW>>();
+
   static constexpr auto vbd_pcqt_to_pcqt = generate_tuple_indirection<
     get_matching_ts<uses_avbd_pcnt, qt_ts<TW>>,
     get_matching_ts<is_pcqt, qt_ts<TW>>
   >();
+
+  static_assert(vbd_pcqt_num > 0);
 
   template<unsigned QT1, unsigned QT2>
   static constexpr bool has_collision_force() {
@@ -59,7 +69,8 @@ struct avbd_pcnt_fg_tt: flag_avbd_jacobi_fg, flag_avbd_gs_fg {
     static constexpr unsigned vbd_pcnt_qt2 = qt_to_vbd_pcqt[QT2];
     static_assert(vbd_pcnt_qt1 != -1 && vbd_pcnt_qt2 != -1);
     static_assert(has_collision_force_v<qt_t<QT1, TW>, qt_t<QT2, TW>>);
-    return m_avbd_pcnt_set.template avbd_pcnt_data<vbd_pcnt_qt1, vbd_pcnt_qt2>()[reg];
+    return m_avbd_pcnt_set
+      .template avbd_pcnt_data<vbd_pcnt_qt1, vbd_pcnt_qt2>()[reg];
   }
 
   template<unsigned QT1, unsigned QT2>
@@ -70,7 +81,8 @@ struct avbd_pcnt_fg_tt: flag_avbd_jacobi_fg, flag_avbd_gs_fg {
     static_assert(has_collision_force_v<qt_t<QT1, TW>, qt_t<QT2, TW>>);
     static_assert(uses_gs_for_avbd_pcnt<qt_t<QT1, TW>>::value);
     static_assert(uses_gs_for_avbd_pcnt<qt_t<QT2, TW>>::value);
-    return m_avbd_pcnt_set.template q1_to_pcnt<vbd_pcnt_qt1, vbd_pcnt_qt2>()[reg];
+    return m_avbd_pcnt_set
+      .template q1_to_pcnt<vbd_pcnt_qt1, vbd_pcnt_qt2>()[reg];
   }
 
   template<unsigned QT1, unsigned QT2>
@@ -81,7 +93,8 @@ struct avbd_pcnt_fg_tt: flag_avbd_jacobi_fg, flag_avbd_gs_fg {
     static_assert(has_collision_force_v<qt_t<QT1, TW>, qt_t<QT2, TW>>);
     static_assert(uses_gs_for_avbd_pcnt<qt_t<QT1, TW>>::value);
     static_assert(uses_gs_for_avbd_pcnt<qt_t<QT2, TW>>::value);
-    return m_avbd_pcnt_set.template q2_to_pcnt<vbd_pcnt_qt1, vbd_pcnt_qt2>()[reg];
+    return m_avbd_pcnt_set
+      .template q2_to_pcnt<vbd_pcnt_qt1, vbd_pcnt_qt2>()[reg];
   }
 
 private:
@@ -104,7 +117,11 @@ private:
     tri_apply<vbd_pcqt_num>([&]<size_t VBD_PCQT1, size_t VBD_PCQT2> {
       static constexpr unsigned qt1 = vbd_pcqt_to_qt[VBD_PCQT1];
       static constexpr unsigned qt2 = vbd_pcqt_to_qt[VBD_PCQT2];
-      static constexpr unsigned t = tri_linearize(VBD_PCQT1, VBD_PCQT2, vbd_pcqt_num);
+      static constexpr unsigned t = tri_linearize(
+        VBD_PCQT1,
+        VBD_PCQT2,
+        vbd_pcqt_num
+      );
 
       if constexpr (has_collision_force<qt1, qt2>()) {
         auto &avbd_pcnt_data = get_avbd_pcnt_data<qt1, qt2>(reg);
@@ -128,7 +145,11 @@ private:
     tri_apply<vbd_pcqt_num>([&]<size_t VBD_PCQT1, size_t VBD_PCQT2> {
       static constexpr unsigned qt1 = vbd_pcqt_to_qt[VBD_PCQT1];
       static constexpr unsigned qt2 = vbd_pcqt_to_qt[VBD_PCQT2];
-      static constexpr unsigned t = tri_linearize(VBD_PCQT1, VBD_PCQT2, vbd_pcqt_num);
+      static constexpr unsigned t = tri_linearize(
+        VBD_PCQT1,
+        VBD_PCQT2,
+        vbd_pcqt_num
+      );
 
       if constexpr (has_collision_force<qt1, qt2>()) {
         auto &qd1 = reg_s.template get_qt<qt1>(reg).qd();
@@ -137,7 +158,13 @@ private:
 
         if constexpr (uses_gs_for_avbd_pcnt<qt_t<qt1, TW>>::value) {
           if (!tasks2.done(t)) {
-            if (update_q1_to_cnt(avbd_pcnt_datac, get_q1_to_pcnt<qt1, qt2>(reg), qd1.size())) {
+            if (
+              update_q1_to_cnt(
+                avbd_pcnt_datac,
+                get_q1_to_pcnt<qt1, qt2>(reg),
+                qd1.size()
+              )
+            ) {
               tasks2.mark_as_done(t);
             }
           }
@@ -145,7 +172,13 @@ private:
 
         if constexpr (uses_gs_for_avbd_pcnt<qt_t<qt1, TW>>::value) {
           if (!tasks3.done(t)) {
-            if (update_q2_to_cnt(avbd_pcnt_datac, get_q2_to_pcnt<qt1, qt2>(reg), qd2.size())) {
+            if (
+              update_q2_to_cnt(
+                avbd_pcnt_datac,
+                get_q2_to_pcnt<qt1, qt2>(reg),
+                qd2.size()
+              )
+            ) {
               tasks3.mark_as_done(t);
             }
           }
@@ -182,9 +215,16 @@ private:
           static constexpr unsigned vbd_pcqt2 = vbd_pcqt + I;
           static constexpr unsigned qt1 = vbd_pcqt_to_qt[vbd_pcqt1];
           static constexpr unsigned qt2 = vbd_pcqt_to_qt[vbd_pcqt2];
-          static constexpr unsigned t = tri_linearize(vbd_pcqt1, vbd_pcqt2, vbd_pcqt_num);
+          static constexpr unsigned t = tri_linearize(
+            vbd_pcqt1,
+            vbd_pcqt2,
+            vbd_pcqt_num
+          );
 
-          if constexpr ((uses_pcnt<qt1>() || uses_pcnt<qt2>()) && has_collision_force<qt1, qt2>()) {
+          if constexpr (
+            (uses_pcnt<qt1>() || uses_pcnt<qt2>())
+            && has_collision_force<qt1, qt2>()
+          ) {
             auto &qd1 = reg_s.template get_qt<qt1>(reg).qd();
             auto &qd2 = reg_s.template get_qt<qt2>(reg).qd();
             auto &avbd_pcnt_data = get_avbd_pcnt_data<qt1, qt2>(reg);
@@ -202,9 +242,16 @@ private:
           static constexpr unsigned vbd_pcqt2 = vbd_pcqt;
           static constexpr unsigned qt1 = vbd_pcqt_to_qt[vbd_pcqt1];
           static constexpr unsigned qt2 = vbd_pcqt_to_qt[vbd_pcqt2];
-          static constexpr unsigned t = tri_linearize(vbd_pcqt1, vbd_pcqt2, vbd_pcqt_num);
+          static constexpr unsigned t = tri_linearize(
+            vbd_pcqt1,
+            vbd_pcqt2,
+            vbd_pcqt_num
+          );
 
-          if constexpr ((uses_pcnt<qt1>() || uses_pcnt<qt2>()) && has_collision_force<qt1, qt2>()) {
+          if constexpr (
+            (uses_pcnt<qt1>() || uses_pcnt<qt2>())
+            && has_collision_force<qt1, qt2>()
+          ) {
             auto &qd1 = reg_s.template get_qt<qt1>(reg).qd();
             auto &qd2 = reg_s.template get_qt<qt2>(reg).qd();
             auto &avbd_pcnt_data = get_avbd_pcnt_data<qt1, qt2>(reg);
@@ -245,19 +292,37 @@ private:
           static constexpr unsigned vbd_pcqt2 = VBD_PCQT + I;
           static constexpr unsigned qt1 = vbd_pcqt_to_qt[vbd_pcqt1];
           static constexpr unsigned qt2 = vbd_pcqt_to_qt[vbd_pcqt2];
-          static constexpr unsigned t = tri_linearize(vbd_pcqt1, vbd_pcqt2, vbd_pcqt_num);
+          static constexpr unsigned t = tri_linearize(
+            vbd_pcqt1,
+            vbd_pcqt2,
+            vbd_pcqt_num
+          );
 
-          static_assert(is_cqt<qt_t<qt1, TW>>::value, "qt must be colorable to use gauss siedel");
+          static_assert(
+            is_cqt<qt_t<qt1, TW>>::value,
+            "qt must be colorable to use gauss siedel"
+          );
 
           if constexpr (has_collision_force<qt1, qt2>()) {
             auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
             const auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
             const auto &avbd_pcnt_data = get_avbd_pcnt_data<qt1, qt2>(reg);
             const auto &q1_to_pcnt = get_q1_to_pcnt<qt1, qt2>(reg);
-            const auto &color_data = color_s.template get_color_data<qt1>(reg, c);
+            const auto &color_data = color_s.template get_color_data<qt1>(
+              reg,
+              c
+            );
 
             if (!tasks1.done(t)) {
-              if (add_derivs1(qd1_s, qd2_s, avbd_pcnt_data, color_data, q1_to_pcnt)) {
+              if (
+                add_derivs1(
+                  qd1_s,
+                  qd2_s,
+                  avbd_pcnt_data,
+                  color_data,
+                  q1_to_pcnt
+                )
+              ) {
                 tasks1.mark_as_done(t);
               }
             }
@@ -269,19 +334,37 @@ private:
           static constexpr unsigned vbd_pcqt2 = VBD_PCQT;
           static constexpr unsigned qt1 = vbd_pcqt_to_qt[vbd_pcqt1];
           static constexpr unsigned qt2 = vbd_pcqt_to_qt[vbd_pcqt2];
-          static constexpr unsigned t = tri_linearize(vbd_pcqt1, vbd_pcqt2, vbd_pcqt_num);
+          static constexpr unsigned t = tri_linearize(
+            vbd_pcqt1,
+            vbd_pcqt2,
+            vbd_pcqt_num
+          );
 
-          static_assert(is_cqt<qt_t<qt2, TW>>::value, "qt must be colorable to use gauss siedel");
+          static_assert(
+            is_cqt<qt_t<qt2, TW>>::value,
+            "qt must be colorable to use gauss siedel"
+          );
 
           if constexpr (has_collision_force<qt1, qt2>()) {
             const auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
             auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
             const auto &avbd_pcnt_data = get_avbd_pcnt_data<qt1, qt2>(reg);
             const auto &q2_to_pcnt = get_q2_to_pcnt<qt1, qt2>(reg);
-            const auto &color_data = color_s.template get_color_data<qt2>(reg, c);
+            const auto &color_data = color_s.template get_color_data<qt2>(
+              reg,
+              c
+            );
 
             if (!tasks2.done(t)) {
-              if (add_derivs2(qd1_s, qd2_s, avbd_pcnt_data, color_data, q2_to_pcnt)) {
+              if (
+                add_derivs2(
+                  qd1_s,
+                  qd2_s,
+                  avbd_pcnt_data,
+                  color_data,
+                  q2_to_pcnt
+                )
+              ) {
                 tasks2.mark_as_done(t);
               }
             }
@@ -307,9 +390,16 @@ private:
     tri_apply<vbd_pcqt_num>([&]<size_t VBD_PCQT1, size_t VBD_PCQT2> {
       static constexpr unsigned qt1 = vbd_pcqt_to_qt[VBD_PCQT1];
       static constexpr unsigned qt2 = vbd_pcqt_to_qt[VBD_PCQT2];
-      static constexpr unsigned t = tri_linearize(VBD_PCQT1, VBD_PCQT2, vbd_pcqt_num);
+      static constexpr unsigned t = tri_linearize(
+        VBD_PCQT1,
+        VBD_PCQT2,
+        vbd_pcqt_num
+      );
 
-      if constexpr ((uses_pcnt<qt1>() || uses_pcnt<qt2>()) && has_collision_force<qt1, qt2>()) {
+      if constexpr (
+        (uses_pcnt<qt1>() || uses_pcnt<qt2>())
+        && has_collision_force<qt1, qt2>()
+      ) {
         auto &avbd_tcnt_data = get_avbd_pcnt_data<qt1, qt2>(reg);
         auto &qd1_s = reg_s.template get_qt<qt1>(reg).qd();
         auto &qd2_s = reg_s.template get_qt<qt2>(reg).qd();
@@ -353,7 +443,12 @@ private:
   }
 
   template<unsigned QT1, unsigned QT2>
-  inline void on_pcnt_add(unsigned reg, unsigned pcnt, unsigned q1, unsigned q2) {
+  inline void on_pcnt_add(
+    unsigned reg,
+    unsigned pcnt,
+    unsigned q1,
+    unsigned q2
+  ) {
     static constexpr bool qt1_gs = uses_gs_for_avbd_pcnt<qt_t<QT1, TW>>::value;
     static constexpr bool qt2_gs = uses_gs_for_avbd_pcnt<qt_t<QT2, TW>>::value;
 
@@ -364,7 +459,12 @@ private:
   };
 
   template<unsigned QT1, unsigned QT2>
-  inline void on_pcnt_null(unsigned reg, unsigned pcnt, unsigned q1, unsigned q2) {
+  inline void on_pcnt_null(
+    unsigned reg,
+    unsigned pcnt,
+    unsigned q1,
+    unsigned q2
+  ) {
     static constexpr bool qt1_gs = uses_gs_for_avbd_pcnt<qt_t<QT1, TW>>::value;
     static constexpr bool qt2_gs = uses_gs_for_avbd_pcnt<qt_t<QT2, TW>>::value;
 

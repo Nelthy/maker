@@ -81,7 +81,6 @@ struct flag_gs_for_avbd_pcnt {
 
 template<typename T>
 struct uses_avbd_tcnt_force {
-
   static constexpr bool value = requires { T::avbd_tcnt_force; };
 };
 

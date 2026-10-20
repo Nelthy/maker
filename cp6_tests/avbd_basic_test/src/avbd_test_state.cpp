@@ -22,6 +22,7 @@
 #include <SFML/Graphics/PrimitiveType.hpp>
 #include <cstddef>
 #include <utility>
+#include "avbd_basic/constraint/avbd_pin_impl.h"
 
 void on_main_spin() {};
 
@@ -101,32 +102,32 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
   // add_poly({289, 395}, vector_poly::square_shape(2, 2));
 
   // creating chain
-  // {
-  //   unsigned chain_length = scalers::get("chain length", 0, 1);
-  //   vec2f chain_start = from_sf(m_view.getCenter()) + vec2f{-400, -float(chain_length * 50)};
-  //   for (unsigned i = 0; i < chain_length; i++) {
-  //     if (i > 0) {
-  //       cp6::pin_data pin;
-  //       if (i % 2 == 1) {
-  //         pin.ra = {25, 25};
-  //         pin.rb = {25, -25};
-  //       } else {
-  //         pin.ra = {-25, 25};
-  //         pin.rb = {-25, -25};
-  //       }
-  //
-  //       unsigned q = add_poly(chain_start + vec2f{0, float(i * 51)},
-  //       vector_poly::square_shape()); get<cp6::avbd_pin_fg>(m_phy).add_pin<poly_qt,
-  //       poly_qt>(reg, q - 1, q, pin);
-  //     } else {
-  //       // first link
-  //       unsigned q = add_poly(chain_start + vec2f{0, float(i * 51)},
-  //       vector_poly::square_shape());
-  //       // get_qt<poly_qt>().flags()[q].dont_resolve_collisions = true;
-  //       // get_qt<poly_qt>().flags()[q].immovable = true;
-  //     }
-  //   }
-  // }
+  {
+    unsigned chain_length = scalers::get("chain length", 10, 1);
+    vec2f chain_start = from_sf(m_view.getCenter()) + vec2f{-400, -float(chain_length * 50)};
+    for (unsigned i = 0; i < chain_length; i++) {
+      if (i > 0) {
+        cp6::pin_data pin;
+        if (i % 2 == 1) {
+          pin.ra = {25, 25};
+          pin.rb = {25, -25};
+        } else {
+          pin.ra = {-25, 25};
+          pin.rb = {-25, -25};
+        }
+
+        unsigned q = add_poly(chain_start + vec2f{0, float(i * 51)},
+        vector_poly::square_shape()); get<cp6::avbd_pin_fg>(m_phy).add_pin<poly_qt,
+        poly_qt>(reg, q - 1, q, pin);
+      } else {
+        // first link
+        unsigned q = add_poly(chain_start + vec2f{0, float(i * 51)},
+        vector_poly::square_shape());
+        // get_qt<poly_qt>().flags()[q].dont_resolve_collisions = true;
+        // get_qt<poly_qt>().flags()[q].immovable = true;
+      }
+    }
+  }
 
   // creating liquid
   // {
@@ -518,33 +519,33 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
     });
   }
 
-  // // drawing pins
-  // tri_apply<qt_num>([&]<size_t QT1, size_t QT2> {
-  //   if constexpr (cp6::has_avbd_pin<qt_t<QT1>>::value && cp6::has_avbd_pin<qt_t<QT1>>::value) {
-  //     sf::CircleShape pin_circle;
-  //     pin_circle.setRadius(3);
-  //     pin_circle.setOrigin({pin_circle.getRadius(), pin_circle.getRadius()});
-  //     pin_circle.setFillColor(sf::Color::White);
-  //
-  //     const unsigned *edges_a = get<cp6::avbd_pin_fg>(m_phy).pf_to_q1<QT1, QT2>(reg);
-  //     const unsigned *edges_b = get<cp6::avbd_pin_fg>(m_phy).pf_to_q2<QT1, QT2>(reg);
-  //     const dlm::vec_ds<cp6::pin_data> &pin_state =
-  //       get<cp6::avbd_pin_fg>(m_phy).get_pf_state<QT1, QT2>(reg);
-  //
-  //     for (unsigned p = 0; p < pin_state.size(); p++) {
-  //       unsigned q_a = edges_a[p];
-  //       unsigned q_b = edges_b[p];
-  //
-  //       vec2f pin_world_a = cp6::transform_point(q_a, get_qt<QT1>(), pin_state[p].ra);
-  //       vec2f pin_world_b = cp6::transform_point(q_b, get_qt<QT2>(), pin_state[p].rb);
-  //
-  //       pin_circle.setPosition(to_sf(pin_world_a));
-  //       window.draw(pin_circle);
-  //       pin_circle.setPosition(to_sf(pin_world_b));
-  //       window.draw(pin_circle);
-  //     }
-  //   }
-  // });
+  // drawing pins
+  tri_apply<qt_num>([&]<size_t QT1, size_t QT2> {
+    if constexpr (cp6::is_pinqt<qt_t<QT1>>::value && cp6::is_pinqt<qt_t<QT1>>::value) {
+      sf::CircleShape pin_circle;
+      pin_circle.setRadius(3);
+      pin_circle.setOrigin({pin_circle.getRadius(), pin_circle.getRadius()});
+      pin_circle.setFillColor(sf::Color::White);
+
+      const unsigned *edges_a = get<cp6::avbd_pin_fg>(m_phy).pf_to_q1<QT1, QT2>(reg);
+      const unsigned *edges_b = get<cp6::avbd_pin_fg>(m_phy).pf_to_q2<QT1, QT2>(reg);
+      const dlm::vec_ds<cp6::pin_data> &pin_state =
+        get<cp6::avbd_pin_fg>(m_phy).get_pf_state<QT1, QT2>(reg);
+
+      for (unsigned p = 0; p < pin_state.size(); p++) {
+        unsigned q_a = edges_a[p];
+        unsigned q_b = edges_b[p];
+
+        vec2f pin_world_a = cp6::transform_point(q_a, get_qt<QT1>(), pin_state[p].ra);
+        vec2f pin_world_b = cp6::transform_point(q_b, get_qt<QT2>(), pin_state[p].rb);
+
+        pin_circle.setPosition(to_sf(pin_world_a));
+        window.draw(pin_circle);
+        pin_circle.setPosition(to_sf(pin_world_b));
+        window.draw(pin_circle);
+      }
+    }
+  });
 
   // drawing contacts
   if (flags::get("draw contacts", false)) {

@@ -13,6 +13,7 @@
  */
 
 // should only be included in cpp files
+#include "avbd_basic/basic_color_data.h"
 #include "avbd_basic/constraint/avbd_pin_fg.h"
 #include "avbd_basic/vbd_3d_qd.h"
 
@@ -37,8 +38,10 @@ void init_pf_avbd_vars(
 
   pin.C0 = world_a - world_b;
 
-  pin.k[0] =
-    std::max(std::min(qd_a.mass()[q_a].x, qd_a.mass()[q_b].x) * pin_k, pin.k[0] * pin_gamma);
+  pin.k[0] = std::max(
+    std::min(qd_a.mass()[q_a].x, qd_a.mass()[q_b].x) * pin_k,
+    pin.k[0] * pin_gamma
+  );
   pin.k[0] = pin.k[1];
   pin.lambda *= pin_alpha * pin_gamma;
 }
@@ -51,16 +54,16 @@ inline void add_pin_derivs_impl(
   unsigned int other_q,
   const cp6::pin_data &pin
 ) {
-  if (dst_qd.flags()[q].immovable) {
-    return;
-  }
+  if (dst_qd.flags()[q].immovable) { return; }
 
   // compute C
   vec2f C;
   if constexpr (A) {
-    C = transform_point(q, dst_qd, pin.ra) - transform_point(other_q, other_qd, pin.rb);
+    C = transform_point(q, dst_qd, pin.ra)
+      - transform_point(other_q, other_qd, pin.rb);
   } else {
-    C = transform_point(other_q, other_qd, pin.ra) - transform_point(q, dst_qd, pin.rb);
+    C = transform_point(other_q, other_qd, pin.ra)
+      - transform_point(q, dst_qd, pin.rb);
   }
 
   C -= pin.C0 * pin_alpha;
@@ -90,8 +93,10 @@ inline void add_pin_derivs_impl(
 
   // add derivs
   vec3f G[2];
-  G[0] = vec3f{length(H[0].col(0)), length(H[0].col(1)), length(H[0].col(2))} * abs(f[0]);
-  G[1] = vec3f{length(H[1].col(0)), length(H[1].col(1)), length(H[1].col(2))} * abs(f[1]);
+  G[0] = vec3f{length(H[0].col(0)), length(H[0].col(1)), length(H[0].col(2))}
+       * abs(f[0]);
+  G[1] = vec3f{length(H[1].col(0)), length(H[1].col(1)), length(H[1].col(2))}
+       * abs(f[1]);
 
   dst_qd.f()[q] += J[0] * f[0];
   dst_qd.f()[q] += J[1] * f[1];
@@ -129,12 +134,13 @@ inline void add_pin_derivs_impl(
 //   mat2f S = {0, -1, 1, 0};
 //   mat2f I = {1, 0, 0, 1};
 //
-//   // vec2f delta = transform(bodyA->position, rA) - transform(bodyB->position, rB);
-//   vec2f d;
-//   if constexpr (A) {
-//     d = transform_point(q, dst_qd, pin.ra) - transform_point(other_q, other_qd, pin.rb);
+//   // vec2f delta = transform(bodyA->position, rA) -
+//   transform(bodyB->position, rB); vec2f d; if constexpr (A) {
+//     d = transform_point(q, dst_qd, pin.ra) - transform_point(other_q,
+//     other_qd, pin.rb);
 //   } else {
-//     d = transform_point(other_q, other_qd, pin.ra) - transform_point(q, dst_qd, pin.rb);
+//     d = transform_point(other_q, other_qd, pin.ra) - transform_point(q,
+//     dst_qd, pin.rb);
 //   }
 //
 //   float dlen2 = dot(d, d);
@@ -156,10 +162,12 @@ inline void add_pin_derivs_impl(
 //     J.xy() = n;
 //     J.z = dot(n, Sr);
 //     mat3f H =
-//       {dxx.row[0].x, dxx.row[0].y, dxr.x, dxx.row[1].x, dxx.row[1].y, dxr.y, dxr.x, dxr.y, drr};
+//       {dxx.row[0].x, dxx.row[0].y, dxr.x, dxx.row[1].x, dxx.row[1].y, dxr.y,
+//       dxr.x, dxr.y, drr};
 //
 //     float f = C * pin.k + pin.lambda;
-//     mat3f G = diagonal(length(H.col(0)), length(H.col(1)), length(H.col(2))) * abs(f);
+//     mat3f G = diagonal(length(H.col(0)), length(H.col(1)), length(H.col(2)))
+//     * abs(f);
 //
 //     dst_qd.f()[q] += J * f;
 //     dst_qd.H()[q] += outer(J, J) * pin.k + G;
@@ -173,40 +181,94 @@ inline void add_pin_derivs_impl(
 //     J.xy() = -n;
 //     J.z = dot(n, -Sr);
 //     mat3f H =
-//       {dxx.row[0].x, dxx.row[0].y, dxr.x, dxx.row[1].x, dxx.row[1].y, dxr.y, dxr.x, dxr.y, drr};
+//       {dxx.row[0].x, dxx.row[0].y, dxr.x, dxx.row[1].x, dxx.row[1].y, dxr.y,
+//       dxr.x, dxr.y, drr};
 //
 //     float f = C * pin.k + pin.lambda;
-//     mat3f G = diagonal(length(H.col(0)), length(H.col(1)), length(H.col(2))) * abs(f);
+//     mat3f G = diagonal(length(H.col(0)), length(H.col(1)), length(H.col(2)))
+//     * abs(f);
 //
 //     dst_qd.f()[q] += J * f;
 //     dst_qd.H()[q] += outer(J, J) * pin.k + G;
 //   }
 // }
+//
+// template<typename OTHER_QD>
+// inline void add_pf_derivs_a(
+//   vbd_3d_qd &dst_qd,
+//   const OTHER_QD &other_qd,
+//   unsigned int q,
+//   unsigned int other_q,
+//   unsigned int pf,
+//   const dlm::vec_ds<cp6::pin_data> &pf_state
+// ) {
+//   add_pin_derivs_impl<true>(dst_qd, other_qd, q, other_q, pf_state[pf]);
+// };
+//
+// template<typename OTHER_QD>
+// inline void add_pf_derivs_b(
+//   vbd_3d_qd &dst_qd,
+//   const OTHER_QD &other_qd,
+//   unsigned int q,
+//   unsigned int other_q,
+//   unsigned int pf,
+//   const dlm::vec_ds<cp6::pin_data> &pf_state
+// ) {
+//   add_pin_derivs_impl<false>(dst_qd, other_qd, q, other_q, pf_state[pf]);
+// };
 
 template<typename OTHER_QD>
-inline void add_pf_derivs_a(
-  vbd_3d_qd &dst_qd,
-  const OTHER_QD &other_qd,
-  unsigned int q,
-  unsigned int other_q,
-  unsigned int pf,
-  const dlm::vec_ds<cp6::pin_data> &pf_state
+bool add_pf_derivs1(
+  cp6::vbd_3d_qd &qd1,
+  const OTHER_QD &qd2,
+  const dlm::vec_ds<cp6::pin_data> &pin_data,
+  const basic_color_data &color_data,
+  const dlm::vec_ds<dlm::ikey<1>, 2> &q_to_pin,
+  const unsigned int *pin_to_q2
 ) {
-  add_pin_derivs_impl<true>(dst_qd, other_qd, q, other_q, pf_state[pf]);
-};
+  for (unsigned cq = 0; cq < color_data.cq_num; cq++) {
+    unsigned q = color_data.to_q[cq];
+    for (unsigned q_pin = 0; q_pin < q_to_pin[q].size(); q_pin++) {
+      unsigned q_pin_pin = q_to_pin[q][q_pin];
+      unsigned other_q = pin_to_q2[q_pin_pin];
+      add_pin_derivs_impl<true>(qd1, qd2, q, other_q, pin_data[q_pin_pin]);
+    }
+  }
+
+  return true;
+}
 
 template<typename OTHER_QD>
-inline void add_pf_derivs_b(
-  vbd_3d_qd &dst_qd,
-  const OTHER_QD &other_qd,
-  unsigned int q,
-  unsigned int other_q,
-  unsigned int pf,
-  const dlm::vec_ds<cp6::pin_data> &pf_state
+bool add_pf_derivs2(
+  const cp6::vbd_3d_qd &qd1,
+  OTHER_QD &qd2,
+  const dlm::vec_ds<cp6::pin_data> &pin_data,
+  const basic_color_data &color_data,
+  const dlm::vec_ds<dlm::ikey<1>, 2> &q_to_pin,
+  const unsigned int *pin_to_q1
 ) {
-  add_pin_derivs_impl<false>(dst_qd, other_qd, q, other_q, pf_state[pf]);
-};
+  for (unsigned cq = 0; cq < color_data.cq_num; cq++) {
+    unsigned q = color_data.to_q[cq];
+    for (unsigned q_pin = 0; q_pin < q_to_pin[q].size(); q_pin++) {
+      unsigned q_pin_pin = q_to_pin[q][q_pin];
+      unsigned other_q = pin_to_q1[q_pin_pin];
+      add_pin_derivs_impl<false>(qd2, qd1, q, other_q, pin_data[q_pin_pin]);
+    }
+  }
 
+  return true;
+}
+// template<typename OTHER_QD>
+// inline void add_pf_derivs_b(
+//   vbd_3d_qd &dst_qd,
+//   const OTHER_QD &other_qd,
+//   unsigned int q,
+//   unsigned int other_q,
+//   unsigned int pf,
+//   const dlm::vec_ds<cp6::pin_data> &pf_state
+// ) {
+//   add_pin_derivs_impl<false>(dst_qd, other_qd, q, other_q, pf_state[pf]);
+// };
 template<typename QD_A, typename QD_B>
 void update_pf_avbd_vars(
   dlm::vec_ds<cp6::pin_data> &pf_state,
@@ -217,7 +279,8 @@ void update_pf_avbd_vars(
   const QD_B &qd_b
 ) {
   cp6::pin_data &pin = pf_state[pf];
-  vec2f C = transform_point(q_a, qd_a, pin.ra) - transform_point(q_b, qd_b, pin.rb);
+  vec2f C = transform_point(q_a, qd_a, pin.ra)
+          - transform_point(q_b, qd_b, pin.rb);
   pin.lambda[0] += pin.k[0] * C[0];
   pin.lambda[1] += pin.k[1] * C[1];
   pin.k[0] += pin_beta * abs(C[0]);

@@ -15,6 +15,42 @@
 #include <perm_arr.h>
 
 namespace cp6 {
+
+// template<
+//   typename QD1,
+//   typename QD2,
+//   typename AVBD_CNTS,
+//   typename COLOR_T,
+//   typename Q_TO_CNT_T,
+//   typename PF_TO_Q_T
+// >
+// bool add_pf_derivs1(
+//   QD1 &dst_qd1,
+//   const QD2 &qd2,
+//   const AVBD_CNTS &avbd_tcnts,
+//   const COLOR_T &color,
+//   const Q_TO_CNT_T &q1_to_cnt,
+//   const PF_TO_Q_T &pf_to_q2
+// );
+
+bool add_pf_derivs1(
+  auto &dst_qd1,
+  const auto &qd2,
+  const auto &avbd_tcnts,
+  const auto &color,
+  const auto &q1_to_cnt,
+  const auto &pf_to_q2
+);
+
+bool add_pf_derivs2(
+  const auto &dst_qd1,
+  auto &qd2,
+  const auto &avbd_tcnts,
+  const auto &color,
+  const auto &q1_to_cnt,
+  const auto &pf_to_q1
+);
+
 template<typename DST_QD, typename OTHER_QD, typename PF_STATE>
 void add_pf_derivs_a(
   DST_QD &dst_qd,
@@ -61,35 +97,38 @@ struct pair_force_state;
 template<template<typename> class TRAIT, typename QD1, typename QD2>
 using pair_force_state_t = typename pair_force_state<TRAIT, QD1, QD2>::type;
 
-// provides the common state and functions needed for forces/constraints between two coordinates.
+// provides the common state and functions needed for forces/constraints between
+// two coordinates.
 template<template<typename> class TRAIT, typename TW>
-struct pair_force_fg_tt: cp6::flag_phase_linker {
+struct pair_force_fg_tt {
   static constexpr unsigned pfqt_num = get_matching_num<TRAIT, qt_ts<TW>>();
   static constexpr auto qt_to_pfqt = generate_tuple_indirection<
-    qt_ts<Ts...>,
-    god::get_matching_ts<TRAIT, qt_ts<Ts...>>
+    qt_ts<TW>,
+    get_matching_ts<TRAIT, qt_ts<TW>>
   >();
 
   static constexpr auto pfqt_to_qt = generate_tuple_indirection<
-    god::get_matching_ts<TRAIT, qt_ts<Ts...>>,
-    qt_ts<Ts...>
+    get_matching_ts<TRAIT, qt_ts<TW>>,
+    qt_ts<TW>
   >();
 
   static constexpr auto vbd_qt_to_qt = generate_tuple_indirection<
-    god::get_matching_ts<is_vbd_qt, qt_ts<Ts...>>,
-    qt_ts<Ts...>
+    get_matching_ts<is_vbd_qt, qt_ts<TW>>,
+    qt_ts<TW>
   >();
 
-  static constexpr unsigned vbd_qt_num = get_matching_num<is_vbd_qt, qt_ts<Ts...>>();
+  static constexpr unsigned
+    vbd_qt_num = get_matching_num<is_vbd_qt, qt_ts<TW>>();
 
   template<unsigned QT1, unsigned QT2>
   const unsigned *pf_to_q1(unsigned reg) const {
     static_assert(QT1 <= QT2);
     static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
     static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
-    return (const unsigned *)get<tri_linearize(pfqt1, pfqt2, pfqt_num), to_q_pf_a_n>(m_pf_data)[reg]
-      .template get<0>()
-      .data();
+    return (const unsigned *)
+      get<tri_linearize(pfqt1, pfqt2, pfqt_num), to_q_pf_a_n>(m_pf_data)[reg]
+        .template get<0>()
+        .data();
   }
 
   template<unsigned QT1, unsigned QT2>
@@ -97,9 +136,10 @@ struct pair_force_fg_tt: cp6::flag_phase_linker {
     static_assert(QT1 <= QT2);
     static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
     static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
-    return (const unsigned *)get<tri_linearize(pfqt1, pfqt2, pfqt_num), to_q_pf_b_n>(m_pf_data)[reg]
-      .template get<0>()
-      .data();
+    return (const unsigned *)
+      get<tri_linearize(pfqt1, pfqt2, pfqt_num), to_q_pf_b_n>(m_pf_data)[reg]
+        .template get<0>()
+        .data();
   }
 
   // returns q's [q_pcnt_a]
@@ -126,7 +166,9 @@ struct pair_force_fg_tt: cp6::flag_phase_linker {
     static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
     static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
     static_assert(pfqt1 != -1 && pfqt2 != -1);
-    return get<tri_linearize(pfqt1, pfqt2, pfqt_num), pf_state_n>(m_pf_data)[reg];
+    return get<tri_linearize(pfqt1, pfqt2, pfqt_num), pf_state_n>(
+      m_pf_data
+    )[reg];
   }
 
   template<unsigned QT1, unsigned QT2>
@@ -135,22 +177,15 @@ struct pair_force_fg_tt: cp6::flag_phase_linker {
     static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
     static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
     static_assert(pfqt1 != -1 && pfqt2 != -1);
-    return get<tri_linearize(pfqt1, pfqt2, pfqt_num), pf_state_n>(m_pf_data)[reg];
+    return get<tri_linearize(pfqt1, pfqt2, pfqt_num), pf_state_n>(
+      m_pf_data
+    )[reg];
   }
 
-protected:
-  friend class god::state<TW...>;
-  friend class avbd_system_tt<TW...>;
-  friend class phase_link_system_tt<TW...>;
+  // protected:
+  friend class god::state<TW>;
+  friend class avbd_system_tt<TW>;
 
-  template<unsigned QT1, unsigned QT2, typename T>
-  void add_phase_links(unsigned reg, T &phase_links) {
-    // assert(false);
-    for (unsigned reg = 0; reg < size(m_pf_data); reg++) {
-    }
-  }
-
-  // return pf
   template<unsigned QT1, unsigned QT2>
   unsigned add_pf(unsigned reg, unsigned q_a, unsigned q_b) {
     static_assert(QT1 <= QT2);
@@ -173,12 +208,17 @@ protected:
     return pf;
   }
 
-  void start_step(unsigned reg, float h) {
+  bool start_step(unsigned reg, float h) {
+    assert(false);
     tri_apply<pfqt_num>([&]<size_t PFQT1, size_t PFQT2> {
       static constexpr unsigned qt1 = pfqt_to_qt[PFQT1];
       static constexpr unsigned qt2 = pfqt_to_qt[PFQT2];
-      auto &qt_state_a = god::get<is_region_state>(*m_state).template get_qt<qt1>(reg);
-      auto &qt_state_b = god::get<is_region_state>(*m_state).template get_qt<qt2>(reg);
+      auto &qt_state_a = get<is_region_state>(*m_state).template get_qt<qt1>(
+        reg
+      );
+      auto &qt_state_b = get<is_region_state>(*m_state).template get_qt<qt2>(
+        reg
+      );
 
       for (unsigned pf = 0; pf < get_pf_state<qt1, qt2>(reg).size(); pf++) {
         init_pf_avbd_vars(
@@ -191,97 +231,108 @@ protected:
         );
       }
     });
+
+    return true;
   };
 
-  template<unsigned VBD_QT>
-  void add_derivs(unsigned reg, unsigned q) {
-    static constexpr unsigned pfqt = qt_to_pfqt[vbd_qt_to_qt[VBD_QT]];
-    if constexpr (pfqt != -1) {
+  bool add_derivs(unsigned reg, unsigned c) {
+    for_each_i<vbd_qt_num>([&]<unsigned VBD_QT> {
+      static constexpr unsigned pfqt = qt_to_pfqt[vbd_qt_to_qt[VBD_QT]];
+      if constexpr (pfqt != -1) {
+        for_each_i<pfqt_num - pfqt>([&]<size_t I> {
+          static constexpr unsigned qt1 = pfqt_to_qt[pfqt];
+          static constexpr unsigned qt2 = pfqt_to_qt[pfqt + I];
 
-      for_each_i<pfqt_num - pfqt>([&]<size_t I> {
-        static constexpr unsigned qt1 = pfqt_to_qt[pfqt];
-        static constexpr unsigned qt2 = pfqt_to_qt[pfqt + I];
-
-        const std::vector<dlm::ikey<1>> &q_to_pf = q1_to_pf<qt1, qt2>(reg, q);
-
-        for (unsigned q_pf = 0; q_pf < q_to_pf.size(); q_pf++) {
-          unsigned pf = q_to_pf[q_pf];
-          add_pf_derivs_a(
-            god::get<is_region_state>(*m_state).template get_qt<qt1>(reg).qd(),
-            god::get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
-            pf_to_q1<qt1, qt2>(reg)[pf],
-            pf_to_q2<qt1, qt2>(reg)[pf],
-            pf,
-            get_pf_state<qt1, qt2>(reg)
+          auto &color_s = get<color_system>(*m_state);
+          const auto &color_data = color_s.template get_color_data<qt1>(reg, c);
+          static constexpr unsigned pfqt1 = qt_to_pfqt[qt1];
+          static constexpr unsigned pfqt2 = qt_to_pfqt[qt2];
+          add_pf_derivs1(
+            get<is_region_state>(*m_state).template get_qt<qt1>(reg).qd(),
+            get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
+            get_pf_state<qt1, qt2>(reg),
+            color_data,
+            get<pfqt1, pfqt2 - pfqt1, 0>(m_a_q_map)[reg],
+            pf_to_q2<qt1, qt2>(reg)
           );
-        }
-      });
+          // }
+        });
 
-      for_each_i<pfqt + 1>([&]<size_t OTHER_PFQT> {
-        static constexpr unsigned qt1 = pfqt_to_qt[OTHER_PFQT];
-        static constexpr unsigned qt2 = pfqt_to_qt[pfqt];
+        for_each_i<pfqt + 1>([&]<size_t OTHER_PFQT> {
+          static constexpr unsigned qt1 = pfqt_to_qt[OTHER_PFQT];
+          static constexpr unsigned qt2 = pfqt_to_qt[pfqt];
 
-        const std::vector<dlm::ikey<1>> &q_to_pf = q2_to_pf<qt1, qt2>(reg, q);
-
-        for (unsigned q_pf = 0; q_pf < q_to_pf.size(); q_pf++) {
-          unsigned pf = q_to_pf[q_pf];
-          add_pf_derivs_b(
-            god::get<is_region_state>(*m_state).template get_qt<qt1>(reg).qd(),
-            god::get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
-            pf_to_q2<qt1, qt2>(reg)[pf],
-            pf_to_q1<qt1, qt2>(reg)[pf],
-            pf,
-            get_pf_state<qt1, qt2>(reg)
+          auto &color_s = get<color_system>(*m_state);
+          const auto &color_data = color_s.template get_color_data<qt1>(reg, c);
+          static constexpr unsigned pfqt1 = qt_to_pfqt[qt1];
+          static constexpr unsigned pfqt2 = qt_to_pfqt[qt2];
+          add_pf_derivs2(
+            get<is_region_state>(*m_state).template get_qt<qt1>(reg).qd(),
+            get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
+            get_pf_state<qt1, qt2>(reg),
+            color_data,
+            get<pfqt2, pfqt1, 0>(m_b_q_map)[reg],
+            pf_to_q1<qt1, qt2>(reg)
           );
-        }
-      });
-    }
+        });
+      }
+    });
+
+    return true;
   }
 
-  template<unsigned VBD_QT>
-  void add_derivs(unsigned reg) {
-    static constexpr unsigned pfqt = qt_to_pfqt[vbd_qt_to_qt[VBD_QT]];
-    if constexpr (pfqt != -1) {
-      auto &qt_state = god::get<is_region_state>(*m_state).template get_qt<VBD_QT>(reg);
-      for_each_i<pfqt_num - pfqt>([&]<size_t I> {
-        static constexpr unsigned qt1 = pfqt_to_qt[pfqt];
-        static constexpr unsigned qt2 = pfqt_to_qt[pfqt + I];
-        auto &pf_state = get_pf_state<qt1, qt2>(reg);
-        for (unsigned pf = 0; pf < pf_state.size(); pf++) {
-          add_pf_derivs_a(
-            qt_state.qd(),
-            god::get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
-            pf_to_q1<qt1, qt2>(reg)[pf],
-            pf_to_q2<qt1, qt2>(reg)[pf],
-            pf,
-            pf_state
-          );
-        }
-      });
-      for_each_i<pfqt + 1>([&]<size_t OTHER_PFQT> {
-        static constexpr unsigned qt1 = pfqt_to_qt[OTHER_PFQT];
-        static constexpr unsigned qt2 = pfqt_to_qt[pfqt];
-        auto &pf_state = get_pf_state<qt1, qt2>(reg);
-        for (unsigned pf = 0; pf < pf_state.size(); pf++) {
-          add_pf_derivs_b(
-            qt_state.qd(),
-            god::get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
-            pf_to_q2<qt1, qt2>(reg)[pf],
-            pf_to_q1<qt1, qt2>(reg)[pf],
-            pf,
-            pf_state
-          );
-        }
-      });
-    }
-  }
+  // template<unsigned VBD_QT>
+  // bool add_derivs(unsigned reg) {
+  //   static constexpr unsigned pfqt = qt_to_pfqt[vbd_qt_to_qt[VBD_QT]];
+  //   if constexpr (pfqt != -1) {
+  //     auto &qt_state = get<is_region_state>(*m_state).template
+  //     get_qt<VBD_QT>(
+  //       reg
+  //     );
+  //     for_each_i<pfqt_num - pfqt>([&]<size_t I> {
+  //       static constexpr unsigned qt1 = pfqt_to_qt[pfqt];
+  //       static constexpr unsigned qt2 = pfqt_to_qt[pfqt + I];
+  //       auto &pf_state = get_pf_state<qt1, qt2>(reg);
+  //       for (unsigned pf = 0; pf < pf_state.size(); pf++) {
+  //         add_pf_derivs_a(
+  //           qt_state.qd(),
+  //           get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
+  //           pf_to_q1<qt1, qt2>(reg)[pf],
+  //           pf_to_q2<qt1, qt2>(reg)[pf],
+  //           pf,
+  //           pf_state
+  //         );
+  //       }
+  //     });
+  //     for_each_i<pfqt + 1>([&]<size_t OTHER_PFQT> {
+  //       static constexpr unsigned qt1 = pfqt_to_qt[OTHER_PFQT];
+  //       static constexpr unsigned qt2 = pfqt_to_qt[pfqt];
+  //       auto &pf_state = get_pf_state<qt1, qt2>(reg);
+  //       for (unsigned pf = 0; pf < pf_state.size(); pf++) {
+  //         add_pf_derivs_b(
+  //           qt_state.qd(),
+  //           get<is_region_state>(*m_state).template get_qt<qt2>(reg).qd(),
+  //           pf_to_q2<qt1, qt2>(reg)[pf],
+  //           pf_to_q1<qt1, qt2>(reg)[pf],
+  //           pf,
+  //           pf_state
+  //         );
+  //       }
+  //     });
+  //   }
+  //   return true;
+  // }
 
-  void after_step(unsigned reg, float h) {
+  bool after_step(unsigned reg, float h) {
     tri_apply<pfqt_num>([&]<size_t PFQT1, size_t PFQT2> {
       static constexpr unsigned qt1 = pfqt_to_qt[PFQT1];
       static constexpr unsigned qt2 = pfqt_to_qt[PFQT2];
-      auto &qt_state_a = god::get<is_region_state>(*m_state).template get_qt<qt1>(reg);
-      auto &qt_state_b = god::get<is_region_state>(*m_state).template get_qt<qt2>(reg);
+      auto &qt_state_a = get<is_region_state>(*m_state).template get_qt<qt1>(
+        reg
+      );
+      auto &qt_state_b = get<is_region_state>(*m_state).template get_qt<qt2>(
+        reg
+      );
 
       for (unsigned pf = 0; pf < get_pf_state<qt1, qt2>(reg).size(); pf++) {
         update_pf_avbd_vars(
@@ -294,13 +345,14 @@ protected:
         );
       }
     });
+    return true;
   }
 
-  void end_step(unsigned reg, float h) {};
+  bool end_step(unsigned reg, float h) { return true; };
 
-  god::state<TW...> *m_state;
+  god::state<TW> *m_state;
 
-  void init(god::state<TW...> &state) {
+  void init(god::state<TW> &state) {
     m_state = &state;
 
     tri_apply<pfqt_num>([&]<size_t pfqt1, size_t pfqt2> {
@@ -319,15 +371,15 @@ protected:
       );
     });
 
-    god::get<is_region_state>(state).add_r1_external(m_pf_data);
-    god::get<is_region_state>(state).add_r1_external(m_a_q_map);
-    god::get<is_region_state>(state).add_r1_external(m_b_q_map);
+    get<is_region_state>(state).add_r1_external(m_pf_data);
+    get<is_region_state>(state).add_r1_external(m_a_q_map);
+    get<is_region_state>(state).add_r1_external(m_b_q_map);
     for_each_i<pfqt_num>([&]<size_t pfqt> {
-      god::get<is_region_state>(state).template add_r2_external<pfqt_to_qt[pfqt]>(
+      get<is_region_state>(state).template add_r2_external<pfqt_to_qt[pfqt]>(
         m_a_q_map,
         dlm::ckey<pfqt>{}
       );
-      god::get<is_region_state>(state).template add_r2_external<pfqt_to_qt[pfqt]>(
+      get<is_region_state>(state).template add_r2_external<pfqt_to_qt[pfqt]>(
         m_b_q_map,
         dlm::ckey<pfqt>{}
       );
@@ -347,8 +399,8 @@ protected:
       dlm::comp_ds<                         // <3> x_state
         dlm::vec_ds<pair_force_state_t<
           TRAIT,
-          qd_t<pfqt_to_qt[pfqt1], Ts...>,
-          qd_t<pfqt_to_qt[pfqt2], Ts...>
+          qd_t<pfqt_to_qt[pfqt1], TW>,
+          qd_t<pfqt_to_qt[pfqt2], TW>
         >>
       >
     >>;
