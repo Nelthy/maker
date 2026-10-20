@@ -9,6 +9,7 @@
 #include "collision/narrowphase_system.h"
 #include "collision/pcnt_system.h"
 #include "collision_basic/basic_broadphase.h"
+#include "avbd_basic/constraint/avbd_pin_fg.h"
 #include "god_state.h"
 #include "region_state.h"
 #include "state.h"
@@ -19,6 +20,7 @@
 // needed for state definition
 #include <avbd_basic/collision/avbd_cnt_type_defs.h>
 #include <collision_basic/collision_combo_defs.h>
+
 
 
 struct vbd_liquid_qt:
@@ -80,9 +82,9 @@ struct avbd_test_state: state {
       cp6::color_system,
       cp6::avbd_system,
       cp6::avbd_pcnt_fg,
-      cp6::avbd_tcnt_fg
-      // cp6::avbd_pin_fg,
-      // cp6::avbd_liquid_fg
+      cp6::avbd_tcnt_fg,
+      cp6::avbd_pin_fg,
+      cp6::avbd_liquid_fg
     >;
   };
 
@@ -94,7 +96,6 @@ struct avbd_test_state: state {
   float liquid_particle_radius = 10;
   float liquid_kernal_collider_radius = 30;
 
-  bool draw_colors = true;
 
   static constexpr unsigned color_color_num = 8;
   static constexpr sf::Color color_colors[] = {
@@ -115,5 +116,5 @@ struct avbd_test_state: state {
 
   unsigned add_poly(vec2f pos, vector_poly shape);
   unsigned add_particle(vec2f pos, float radius);
-  // unsigned add_liquid_particle(vec2f pos);
+  unsigned add_liquid_particle(vec2f pos);
 };

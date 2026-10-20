@@ -4,8 +4,8 @@
 #include "avbd_basic/liquid/liquid_states.h"
 #include "avbd_basic/liquid/vbd_liquid_qd.h"
 #include "collision/narrowphase_system.h"
-#include "god_state.h"
 #include "cubic_spline_kernal_fns.h"
+#include "god_state.h"
 #include "maths.h"
 #include "region_state.h"
 #include "spiky_kernel_fns.h"
@@ -39,9 +39,7 @@ inline void add_liquid_derivs(vbd_liquid_qd &qd, unsigned q) {
 
     vec2f r_vec = qd.q()[q] - qd.q()[oq];
     float r = length(r_vec);
-    if (r <= 1e-7) {
-      continue;
-    }
+    if (r <= 1e-7) { continue; }
     r_vec /= r;
 
     const float W = spiky_w(r, liquid_kernel_rad);
@@ -65,9 +63,7 @@ inline void add_liquid_derivs(vbd_liquid_qd &qd, unsigned q) {
 
   float force = ld.C * ld.k;
 
-  if (liquid_avbd) {
-    force += ld.lambda;
-  }
+  if (liquid_avbd) { force += ld.lambda; }
 
   qd.f()[q] += pa_C_q * force;
 
@@ -83,17 +79,15 @@ inline void add_liquid_derivs(vbd_liquid_qd &qd, unsigned q) {
 }
 
 template<typename TW>
-struct avbd_liquid_fg_tt: cp6::flag_avbd_jacobi_fg{
+struct avbd_liquid_fg_tt: cp6::flag_avbd_jacobi_fg {
   static constexpr unsigned lqt_num = get_matching_num<is_vbd_lqt, qt_ts<TW>>();
   static constexpr unsigned qt = generate_tuple_indirection<
     get_matching_ts<is_vbd_lqt, qt_ts<TW>>,
-    qt_ts<TW>,
-    std::is_same
+    qt_ts<TW>
   >()[0];
   static constexpr auto vbd_qt_to_qt = generate_tuple_indirection<
     get_matching_ts<is_vbd_qt, qt_ts<TW>>,
-    qt_ts<TW>,
-    std::is_same
+    qt_ts<TW>
   >();
   static_assert(lqt_num == 1);
 
@@ -101,7 +95,7 @@ private:
   friend class god::state<TW>;
   friend class avbd_system_tt<TW>;
 
-  void start_step(unsigned reg, float h) {
+  bool start_step(unsigned reg, float h) {
     auto &reg_s = get<is_region_state>(*m_state);
     vbd_liquid_qd &q_data = reg_s.template get_qt<qt>(reg).qd();
 
@@ -134,14 +128,16 @@ private:
         lv.k = liquid_init_k;
       }
     }
+    return true;
   };
 
-  void add_derivs(unsigned reg) {
+  bool add_derivs(unsigned reg) {
     auto &reg_s = get<is_region_state>(*m_state);
     auto &q_data = reg_s.template get_qt<qt>(reg);
     for (unsigned q = 0; q < q_data.size(); q++) {
       add_liquid_derivs(q_data, q);
     }
+    return true;
   }
 
   //
@@ -155,7 +151,7 @@ private:
   //   }
   // }
 
-  void after_step(unsigned reg, float h) {
+  bool after_step(unsigned reg, float h) {
     auto &reg_s = get<is_region_state>(*m_state);
     auto &q_data = reg_s.template get_qt<qt>(reg);
 
@@ -166,9 +162,12 @@ private:
         lv.k += liquid_beta * abs(lv.C);
       }
     }
+    return true;
   }
 
-  void end_step(unsigned reg, float h) {}
+  bool end_step(unsigned reg, float h) {
+    return true;
+  }
 
   void init(god::state<TW> &state) { m_state = &state; }
 
@@ -185,8 +184,8 @@ struct avbd_liquid_fg {
 
 /*
   THOUGHTS.
-  I don't know a lot about liquid, so lets just get it working with a single qd before generalizing
-  to to multiple.
+  I don't know a lot about liquid, so lets just get it working with a single qd
+  before generalizing to to multiple.
 */
 
 // inline void add_liquid_derivs(vbd_liquid_qd &qd, unsigned q) {
@@ -219,7 +218,8 @@ struct avbd_liquid_fg {
 //
 //     J += 1.f / (mj * W);
 //     pa_J_q += W_grad / (mj * W * W);
-//     pa_J_qq += ((outer(W_grad, W_grad) * 2.f) / (mj * W * W * W)) - ((W_hess / (mj * W * W)));
+//     pa_J_qq += ((outer(W_grad, W_grad) * 2.f) / (mj * W * W * W)) - ((W_hess
+//     / (mj * W * W)));
 //   }
 //   float rho0 = 1;//qd.liquid_data()[q].intial_density;
 //   float k = 1;
@@ -232,8 +232,8 @@ struct avbd_liquid_fg {
 //   qd.f()[q] += pa_J_q * force;
 //
 //   // pa_C_qq = pa_J_qq
-//   vec2f G = vec2f{length(pa_J_qq.col(0)), length(pa_J_qq.col(1))} * abs(force);
-//   mat2f H;
+//   vec2f G = vec2f{length(pa_J_qq.col(0)), length(pa_J_qq.col(1))} *
+//   abs(force); mat2f H;
 //   {
 //     H = outer(pa_J_q, pa_J_q);
 //     H *= k;

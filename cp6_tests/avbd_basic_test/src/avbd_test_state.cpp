@@ -312,7 +312,7 @@ void avbd_test_state::update() {
         } else if (i == 5) {
           add_particle(mouse_pos, 20);
         } else if (i == 6) {
-          // add_liquid_particle(mouse_pos);
+          add_liquid_particle(mouse_pos);
         }
       }
     }
@@ -350,14 +350,14 @@ void avbd_test_state::update() {
     get<cp6::narrowphase_system>(m_phy).update(reg);
     PA::inst().end("np");
 
-    // // moving contacts so the liquid radius seems smaller to rigid bodies
-    // {
-    //   auto &lp_tcnt_col_state =
-    //     get<cp6::narrowphase_system>(m_phy).get_tcnt_data<liquid_qt, poly_qt>(reg);
-    //   for (unsigned i = 0; i < lp_tcnt_col_state.size(); i++) {
-    //     lp_tcnt_col_state[i].x2 += lp_tcnt_col_state[i].n * (liquid_kernal_collider_radius - 5);
-    //   }
-    // }
+    // moving contacts so the liquid radius seems smaller to rigid bodies
+    {
+      auto &lp_tcnt_col_state =
+        get<cp6::narrowphase_system>(m_phy).get_tcnt_data<liquid_qt, poly_qt>(reg);
+      for (unsigned i = 0; i < lp_tcnt_col_state.size(); i++) {
+        lp_tcnt_col_state[i].x2 += lp_tcnt_col_state[i].n * (liquid_kernal_collider_radius - 5);
+      }
+    }
 
     // must be updated before resolving collisions
     PA::inst().start("pcnt update");
@@ -396,9 +396,9 @@ void avbd_test_state::update() {
           get_qt<particle_qt>().a_ext()[q].y += 981;
         }
 
-        // for (unsigned q = 0; q < get_qt<liquid_qt>().size(); q++) {
-        //   get_qt<liquid_qt>().a_ext()[q].y += 981;
-        // }
+        for (unsigned q = 0; q < get_qt<liquid_qt>().size(); q++) {
+          get_qt<liquid_qt>().a_ext()[q].y += 981;
+        }
       }
 
       if (!flags::get("temporal sub steps", false)) {
@@ -494,13 +494,13 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
 
   PA::inst().start("draw");
   // drawing cds
-  // for_each_i<qt_num>([&]<size_t QT> {
-  //   if (QT != liquid_qt || flags::get("draw liquid kernel", false)) {
-  //     draw_cd(window, get_qt<QT>().cd(), sf::Color{75, 0, 110, 200});
-  //   }
-  // });
+  for_each_i<qt_num>([&]<size_t QT> {
+    if (QT != liquid_qt) {
+      draw_cd(window, get_qt<QT>().cd(), sf::Color{75, 0, 110, 200});
+    }
+  });
 
-  if (draw_colors) {
+  if (flags::get("draw_colors", true)) {
     auto &color_s = get<cp6::color_system>(m_phy);
     for_each_i<qt_num>([&]<size_t QT> {
       if constexpr (cp6::is_cqt<qt_t<QT>>::value) {
@@ -514,8 +514,6 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
           }
           draw_cd_outline(window, get_qt<QT>().cd(), color.to_q, color.cq_num, curr_color);
         }
-      } else {
-        draw_cd(window, get_qt<QT>().cd(), sf::Color{103, 109, 123, 200});
       }
     });
   }
@@ -603,20 +601,20 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
     }
   }
 
-  // // drawing liquid qt
-  // {
-  //   auto &lqt = get_qt<liquid_qt>();
-  //   sf::CircleShape point;
-  //   point.setRadius(liquid_particle_radius);
-  //   point.setOrigin({point.getRadius(), point.getRadius()});
-  //   // point.setFillColor({173, 0, 255, 150});
-  //   point.setFillColor({0, 120, 255, 150});
-  //
-  //   for (unsigned q = 0; q < lqt.size(); q++) {
-  //     point.setPosition(to_sf(lqt.q()[q]));
-  //     window.draw(point);
-  //   }
-  // }
+  // drawing liquid qt
+  {
+    auto &lqt = get_qt<liquid_qt>();
+    sf::CircleShape point;
+    point.setRadius(liquid_particle_radius);
+    point.setOrigin({point.getRadius(), point.getRadius()});
+    // point.setFillColor({173, 0, 255, 150});
+    point.setFillColor({0, 120, 255, 150});
+
+    for (unsigned q = 0; q < lqt.size(); q++) {
+      point.setPosition(to_sf(lqt.q()[q]));
+      window.draw(point);
+    }
+  }
 
   // drawing body forces
   if (flags::get("draw body forces", false)) {
@@ -692,17 +690,17 @@ unsigned avbd_test_state::add_particle(vec2f pos, float radius) {
   qt.mass()[q].y = qt.mass()[q].x;
   return q;
 }
-//
-// unsigned avbd_test_state::add_liquid_particle(vec2f pos) {
-//   auto &qt = get_qt<liquid_qt>();
-//   unsigned q = qt.size();
-//   grow<liquid_qt>(get<reg_t>(m_phy), 1, {reg});
-//   qt.q()[q] = pos;
-//   qt.cd()[q].radius = liquid_particle_radius;
-//   get_qt<liquid_qt>().cd().calculate_constants(q, &qt.mass()[q].x);
-//   qt.mass()[q].y = qt.mass()[q].x;
-//   qt.mass()[q] *= cp6::lms;
-//
-//   qt.cd()[q].radius = liquid_kernal_collider_radius;
-//   return q;
-// }
+
+unsigned avbd_test_state::add_liquid_particle(vec2f pos) {
+  auto &qt = get_qt<liquid_qt>();
+  unsigned q = qt.size();
+  grow<liquid_qt>(get<reg_t>(m_phy), 1, {reg});
+  qt.q()[q] = pos;
+  qt.cd()[q].radius = liquid_particle_radius;
+  get_qt<liquid_qt>().cd().calculate_constants(q, &qt.mass()[q].x);
+  qt.mass()[q].y = qt.mass()[q].x;
+  qt.mass()[q] *= cp6::lms;
+
+  qt.cd()[q].radius = liquid_kernal_collider_radius;
+  return q;
+}

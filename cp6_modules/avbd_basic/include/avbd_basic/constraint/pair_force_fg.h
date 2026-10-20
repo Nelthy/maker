@@ -2,7 +2,7 @@
 #include "avbd/avbd_flags.h"
 #include "avbd/avbd_system.h"
 #include "collision/phase_link_system.h"
-#include "cross_state.h"
+#include "god_state.h"
 #include "index_maps/comp_key_store.h"
 #include "index_maps/dmap.h"
 #include "index_maps/key_vec.h"
@@ -62,23 +62,22 @@ template<template<typename> class TRAIT, typename QD1, typename QD2>
 using pair_force_state_t = typename pair_force_state<TRAIT, QD1, QD2>::type;
 
 // provides the common state and functions needed for forces/constraints between two coordinates.
-template<template<typename> class TRAIT, typename... Ts>
+template<template<typename> class TRAIT, typename TW>
 struct pair_force_fg_tt: cp6::flag_phase_linker {
-  static constexpr unsigned pfqt_num = get_matching_num<TRAIT, qt_ts<Ts...>>();
+  static constexpr unsigned pfqt_num = get_matching_num<TRAIT, qt_ts<TW>>();
   static constexpr auto qt_to_pfqt = generate_tuple_indirection<
     qt_ts<Ts...>,
-    god::get_matching_ts<TRAIT, qt_ts<Ts...>>,
-    std::is_same
+    god::get_matching_ts<TRAIT, qt_ts<Ts...>>
   >();
+
   static constexpr auto pfqt_to_qt = generate_tuple_indirection<
     god::get_matching_ts<TRAIT, qt_ts<Ts...>>,
-    qt_ts<Ts...>,
-    std::is_same
+    qt_ts<Ts...>
   >();
+
   static constexpr auto vbd_qt_to_qt = generate_tuple_indirection<
     god::get_matching_ts<is_vbd_qt, qt_ts<Ts...>>,
-    qt_ts<Ts...>,
-    std::is_same
+    qt_ts<Ts...>
   >();
 
   static constexpr unsigned vbd_qt_num = get_matching_num<is_vbd_qt, qt_ts<Ts...>>();
@@ -140,9 +139,9 @@ struct pair_force_fg_tt: cp6::flag_phase_linker {
   }
 
 protected:
-  friend class god::cross_state<Ts...>;
-  friend class avbd_system_tt<Ts...>;
-  friend class phase_link_system_tt<Ts...>;
+  friend class god::state<TW...>;
+  friend class avbd_system_tt<TW...>;
+  friend class phase_link_system_tt<TW...>;
 
   template<unsigned QT1, unsigned QT2, typename T>
   void add_phase_links(unsigned reg, T &phase_links) {
@@ -299,9 +298,9 @@ protected:
 
   void end_step(unsigned reg, float h) {};
 
-  god::cross_state<Ts...> *m_state;
+  god::state<TW...> *m_state;
 
-  void init(god::cross_state<Ts...> &state) {
+  void init(god::state<TW...> &state) {
     m_state = &state;
 
     tri_apply<pfqt_num>([&]<size_t pfqt1, size_t pfqt2> {
