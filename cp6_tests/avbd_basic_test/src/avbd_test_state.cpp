@@ -2,6 +2,7 @@
 #include "avbd_basic/collision/avbd_cnt_fn_defs.h"
 #include "avbd_basic/constraint/avbd_pin_fg.h"
 #include "avbd_basic/vbd_2d_qd.h"
+#include "collision/pcnt_system.h"
 #include "collision_basic/narrowphase_fns.h"
 #include "collision_basic/narrowphase_update_fns.h"
 #include "collision_basic/overlapping_defs.h"
@@ -15,6 +16,7 @@
 #include "PA.hpp"
 #include "avbd_test_state.h"
 #include "flags.h"
+#include "operations.h"
 #include "random_index.h"
 #include "scalers.h"
 
@@ -71,7 +73,6 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
       vector_poly::square_shape(20, 10000)
     );
     get_qt<poly_qt>().flags()[q].immovable = true;
-
   }
 
   // creating stack
@@ -176,8 +177,8 @@ void avbd_test_state::update() {
     scalers::set("fps", 1.f / dt);
     scalers::set(
       "collider number",
-      get_qt<poly_qt>()
-        .size() // + get_qt<particle_qt>().size() + get_qt<liquid_qt>().size()
+      get_qt<poly_qt>().size() + get_qt<particle_qt>().size()
+        + get_qt<liquid_qt>().size()
     );
     scalers::set(
       "contact number",
@@ -259,6 +260,36 @@ void avbd_test_state::update() {
       clear_null(get<reg_t>(m_phy));
     }
 
+    if (keybinds["D"]->ispressed || keybinds["D"]->timeheld > 0.1) {
+      if (get_qt<poly_qt>().size() > 1) {
+        auto &pcnt_s = get<cp6::pcnt_system>(m_phy);
+        const std::vector<dlm::ikey<1>>
+          &mouse_to_1pcnt = pcnt_s.q1_to_pcnt<poly_qt, poly_qt>(reg, 0);
+        const std::vector<dlm::ikey<1>>
+          &mouse_to_2pcnt = pcnt_s.q2_to_pcnt<poly_qt, poly_qt>(reg, 0);
+
+        for (unsigned i = 0; i < mouse_to_1pcnt.size(); i++) {
+          unsigned other_q = pcnt_s.pcnt_to_q2<poly_qt, poly_qt>(
+            reg
+          )[mouse_to_1pcnt[i]];
+          // don't want to delete the walls
+          if (other_q > 3) {
+            dlm::null<poly_qt>(get<reg_t>(m_phy), {reg, other_q});
+          }
+        }
+
+        for (unsigned i = 0; i < mouse_to_2pcnt.size(); i++) {
+          unsigned other_q = pcnt_s.pcnt_to_q1<poly_qt, poly_qt>(
+            reg
+          )[mouse_to_1pcnt[i]];
+          if (other_q > 3) {
+            dlm::null<poly_qt>(get<reg_t>(m_phy), {reg, other_q});
+          }
+        }
+        clear_null(get<reg_t>(m_phy));
+      }
+    }
+
     // swap
     if (keybinds["S"]->ispressed || keybinds["S"]->timeheld > 0.1) {
       if (size<poly_qt>(get<reg_t>(m_phy), reg) > 4) {
@@ -308,42 +339,15 @@ void avbd_test_state::update() {
       window.mapPixelToCoords(sf::Mouse::getPosition(window), m_view)
     );
 
-    // basic mouse interaction
-    // {
-    //   if (get_qt<poly_qt>().size() > 1) {
-    //     get_qt<poly_qt>().q()[0].xy() = mouse_pos;
-    //   }
-    //
-    //   if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-    //     const std::vector<dlm::ikey<1>> &mouse_to_a_pcnt =
-    //       get<cp6::pcnt_system>(m_phy).q1_to_pcnt<poly_qt, poly_qt>(reg, 0);
-    //     const std::vector<dlm::ikey<1>> &mouse_to_b_pcnt =
-    //       get<cp6::pcnt_system>(m_phy).q2_to_pcnt<poly_qt, poly_qt>(reg, 0);
-    //
-    //     unsigned other_q = -1;
-    //     if (!mouse_to_a_pcnt.empty()) {
-    //       other_q =
-    //         get<cp6::pcnt_system>(m_phy).pcnt_to_q2<poly_qt,
-    //         poly_qt>(reg)[mouse_to_a_pcnt[0]];
-    //     } else if (!mouse_to_b_pcnt.empty()) {
-    //       other_q =
-    //         get<cp6::pcnt_system>(m_phy).pcnt_to_q1<poly_qt,
-    //         poly_qt>(reg)[mouse_to_b_pcnt[0]];
-    //     }
-    //
-    //     if (other_q != -1) {
-    //       get_qt<poly_qt>().q()[other_q].xy() = mouse_pos;
-    //       get_qt<poly_qt>().q_dot()[other_q].xy() = {0, 0};
-    //     }
-    //   }
-    // }
-
     {
       if (get_qt<poly_qt>().size() > 1) {
         get_qt<poly_qt>().q()[0].xy() = mouse_pos;
       }
 
-      if (is_mouse_grabbing == false) {
+      if (
+        get<cp6::avbd_pin_fg>(m_phy).q1_to_pf<poly_qt, poly_qt>(reg, 0).size()
+        == 0
+      ) {
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
           const std::vector<dlm::ikey<1>>
             &mouse_to_a_pcnt = get<cp6::pcnt_system>(m_phy)
@@ -370,18 +374,24 @@ void avbd_test_state::update() {
               reg,
               0,
               other_q,
-              {.ra = {0, 0}, .rb = cp6::inv_transform_point(other_q, get_qt<poly_qt>(), mouse_pos)}
+              {.ra = {0, 0},
+               .rb = cp6::inv_transform_point(
+                 other_q,
+                 get_qt<poly_qt>(),
+                 mouse_pos
+               )}
             );
-            is_mouse_grabbing = true;
           }
         }
       }
 
       if (
         !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)
-        && is_mouse_grabbing
+        && get<cp6::avbd_pin_fg>(m_phy)
+               .q1_to_pf<poly_qt, poly_qt>(reg, 0)
+               .size()
+             != 0
       ) {
-        is_mouse_grabbing = false;
         unsigned pin = get<cp6::avbd_pin_fg>(m_phy).q1_to_pf<poly_qt, poly_qt>(
           reg,
           0
@@ -396,6 +406,7 @@ void avbd_test_state::update() {
       if (scalers::get("shape type", 1, 1) > 6) {
         scalers::set("shape type", 0);
       }
+      if (scalers::get("shape type") < 0) { scalers::set("shape type", 0); }
       // add shape
       if (keybinds["E"]->ispressed || keybinds["E"]->timeheld > 0.2) {
         unsigned i = scalers::get("shape type");
