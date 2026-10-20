@@ -5,10 +5,10 @@
 #include <collision/pcol_state.h>
 
 namespace cp6 {
+// user defined function
 template<typename BD1_T, typename BD2_T>
 inline bool overlapping(const BD1_T &bd1, const BD2_T &bd2, unsigned q1, unsigned q2);
 
-// user defined function
 template<typename TW>
 struct basic_broadphase_tt {
   static constexpr char qt_num = get_qt_num<TW>();

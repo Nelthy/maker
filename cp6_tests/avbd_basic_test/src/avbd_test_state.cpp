@@ -397,7 +397,7 @@ void avbd_test_state::update() {
           0
         )[0];
 
-        get<cp6::avbd_pin_fg>(m_phy).remove_pf<poly_qt, poly_qt>(reg, pin);
+        get<cp6::avbd_pin_fg>(m_phy).remove_pin<poly_qt, poly_qt>(reg, pin);
       }
     }
 

@@ -22,10 +22,15 @@ template<typename TW>
 struct avbd_pin_fg_tt: pair_force_fg_tt<is_pinqt, TW>, flag_avbd_gs_fg {
   using base = pair_force_fg_tt<is_pinqt, TW>;
 
-  template<unsigned QT_A, unsigned QT_B>
+  template<unsigned QT1, unsigned QT2>
   void add_pin(unsigned reg, unsigned q_a, unsigned q_b, pin_data data) {
-    unsigned pf = base::template add_pf<QT_A, QT_B>(reg, q_a, q_b);
-    base::template get_pf_state<QT_A, QT_B>(reg)[pf] = std::move(data);
+    unsigned pf = base::template add_pf<QT1, QT2>(reg, q_a, q_b);
+    base::template get_pf_state<QT1, QT2>(reg)[pf] = std::move(data);
+  }
+
+  template<unsigned QT1, unsigned QT2>
+  void remove_pin(unsigned reg, unsigned pf) {
+    base::template remove_pf<QT1, QT2>(reg, pf);
   }
 
   // template<unsigned QT1, unsigned QT2, typename T>

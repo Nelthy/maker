@@ -183,20 +183,12 @@ struct pair_force_fg_tt {
     )[reg];
   }
 
-  template<unsigned QT1, unsigned QT2>
-  void remove_pf(unsigned reg, unsigned pf) {
-    static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
-    static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
-    dlm::null<tri_linearize(pfqt1, pfqt2, pfqt_num)>(m_pf_data, {reg, pf});
-    dlm::clear_null(m_pf_data);
-  }
-
 protected:
   friend class god::state<TW>;
   friend class avbd_system_tt<TW>;
 
   template<unsigned QT1, unsigned QT2>
-  unsigned add_pf(unsigned reg, unsigned q_a, unsigned q_b) {
+  unsigned add_pf(unsigned reg, unsigned q1, unsigned q2) {
     static_assert(QT1 <= QT2);
     static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
     static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
@@ -207,14 +199,35 @@ protected:
 
     get<tri_linearize(pfqt1, pfqt2, pfqt_num), to_q_pf_a_n>(m_pf_data).sublink(
       dlm::ikey{reg, pf},
-      dlm::ikey{reg, q_a}
+      dlm::ikey{reg, q1}
     );
 
     get<tri_linearize(pfqt1, pfqt2, pfqt_num), to_q_pf_b_n>(m_pf_data).sublink(
       dlm::ikey{reg, pf},
-      dlm::ikey{reg, q_b}
+      dlm::ikey{reg, q2}
     );
+
+    auto &color_s = get<color_system>(*m_state);
+    color_s.add_edge(reg, {QT1, q1}, {QT2, q2});
+
     return pf;
+  }
+
+  template<unsigned QT1, unsigned QT2>
+  void remove_pf(unsigned reg, unsigned pf) {
+    static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
+    static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
+    auto &color_s = get<color_system>(*m_state);
+    unsigned q1 = pf_to_q1<QT1, QT2>(reg)[pf];
+    unsigned q2 = pf_to_q2<QT1, QT2>(reg)[pf];
+    
+    if(color_s.null_edge(reg, {QT1, q1}, {QT2, q2}) == 0){
+      color_s.clear_null_edges();
+    }
+
+    dlm::null<tri_linearize(pfqt1, pfqt2, pfqt_num)>(m_pf_data, {reg, pf});
+
+    dlm::clear_null(m_pf_data);
   }
 
   bool start_step(unsigned reg, float h) {
