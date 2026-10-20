@@ -7,6 +7,7 @@
 #include "index_maps/dmap.h"
 #include "index_maps/key_vec.h"
 #include "index_maps/pkey_wrap.h"
+#include "operations.h"
 #include "perm_tri_tuple.h"
 #include "perm_tuple.h"
 #include "region_state.h"
@@ -182,7 +183,15 @@ struct pair_force_fg_tt {
     )[reg];
   }
 
-  // protected:
+  template<unsigned QT1, unsigned QT2>
+  void remove_pf(unsigned reg, unsigned pf) {
+    static constexpr unsigned pfqt1 = qt_to_pfqt[QT1];
+    static constexpr unsigned pfqt2 = qt_to_pfqt[QT2];
+    dlm::null<tri_linearize(pfqt1, pfqt2, pfqt_num)>(m_pf_data, {reg, pf});
+    dlm::clear_null(m_pf_data);
+  }
+
+protected:
   friend class god::state<TW>;
   friend class avbd_system_tt<TW>;
 

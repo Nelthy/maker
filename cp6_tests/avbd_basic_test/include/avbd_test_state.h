@@ -95,7 +95,8 @@ struct avbd_test_state: state {
 
   float liquid_particle_radius = 10;
   float liquid_kernal_collider_radius = 30;
-
+  
+  bool is_mouse_grabbing = false;
 
   static constexpr unsigned color_color_num = 8;
   static constexpr sf::Color color_colors[] = {

@@ -19,7 +19,7 @@ struct pair_force_state<is_pinqt, QD_A, QD_B> {
 };
 
 template<typename TW>
-struct avbd_pin_fg_tt: pair_force_fg_tt<is_pinqt, TW>, flag_avbd_gs_fg{
+struct avbd_pin_fg_tt: pair_force_fg_tt<is_pinqt, TW>, flag_avbd_gs_fg {
   using base = pair_force_fg_tt<is_pinqt, TW>;
 
   template<unsigned QT_A, unsigned QT_B>
@@ -33,7 +33,8 @@ struct avbd_pin_fg_tt: pair_force_fg_tt<is_pinqt, TW>, flag_avbd_gs_fg{
   //   assert(false);
   // }
 };
-struct avbd_pin_fg{
+
+struct avbd_pin_fg {
   template<typename TW>
   using template_t = avbd_pin_fg_tt<TW>;
 };
