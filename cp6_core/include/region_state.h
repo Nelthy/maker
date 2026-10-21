@@ -43,23 +43,23 @@ struct region_state:
     return get<QT, 0>(*this)[reg];
   }
 
-  template<typename QT>
-  auto &get_qt(index_t reg) {
-    static_assert(
-      filter_indices<std::is_same, qt_ts>().size() == 1,
-      "must have exactly one qt matching type"
-    );
-    return get_qt<filter_indices<same_as<QT>::template cond, qt_ts>()[0]>(reg);
-  }
-
-  template<typename QT>
-  const auto &get_qt(index_t reg) const {
-    static_assert(
-      filter_indices<std::is_same, qt_ts>().size() == 1,
-      "must have exactly one qt matching type"
-    );
-    return get_qt<filter_indices<std::is_same, qt_ts>()[0]>(reg);
-  }
+  // template<typename QT>
+  // auto &get_qt(index_t reg) {
+  //   static_assert(
+  //     filter_indices<std::is_same, qt_ts>().size() == 1,
+  //     "must have exactly one qt matching type"
+  //   );
+  //   return get_qt<filter_indices<same_as<QT>::template cond, qt_ts>()[0]>(reg);
+  // }
+  //
+  // template<typename QT>
+  // const auto &get_qt(index_t reg) const {
+  //   static_assert(
+  //     filter_indices<std::is_same, qt_ts>().size() == 1,
+  //     "must have exactly one qt matching type"
+  //   );
+  //   return get_qt<filter_indices<std::is_same, qt_ts>()[0]>(reg);
+  // }
 
   template<typename IS>
   void add_r1_external(IS &is) {

@@ -361,21 +361,21 @@ private:
     }
   }
 
-  template<unsigned DST_QT, unsigned SRC_QT>
-  void on_q_move(unsigned dst_q, unsigned src_q, unsigned reg) {
-    static constexpr unsigned dst_pcqt = qt_to_pcqt[DST_QT];
-    static constexpr unsigned src_pcqt = qt_to_pcqt[SRC_QT];
-
-    static constexpr unsigned qt1 = DST_QT <= SRC_QT ? DST_QT : SRC_QT;
-    static constexpr unsigned qt2 = DST_QT <= SRC_QT ? SRC_QT : DST_QT;
-
-    if constexpr (dst_pcqt != -1 && src_pcqt != -1) {
-      if constexpr (can_qts_collide<qt1, qt2, TW>()) {
-        // Eh, you might as well just regenerate the pcnts.
-        std::cout << "on_q_move works for pcnt" << std::endl;
-      }
-    }
-  }
+  // template<unsigned DST_QT, unsigned SRC_QT>
+  // void on_q_move(unsigned dst_q, unsigned src_q, unsigned reg) {
+  //   static constexpr unsigned dst_pcqt = qt_to_pcqt[DST_QT];
+  //   static constexpr unsigned src_pcqt = qt_to_pcqt[SRC_QT];
+  //
+  //   static constexpr unsigned qt1 = DST_QT <= SRC_QT ? DST_QT : SRC_QT;
+  //   static constexpr unsigned qt2 = DST_QT <= SRC_QT ? SRC_QT : DST_QT;
+  //
+  //   if constexpr (dst_pcqt != -1 && src_pcqt != -1) {
+  //     if constexpr (can_qts_collide<qt1, qt2, TW>()) {
+  //       // Eh, you might as well just regenerate the pcnts.
+  //       std::cout << "on_q_move works for pcnt" << std::endl;
+  //     }
+  //   }
+  // }
 
   void init(god::state<TW> &state) {
     m_state = &state;
