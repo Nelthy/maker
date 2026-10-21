@@ -1,4 +1,5 @@
 // needed for definitions
+#include "avbd/color_system.h"
 #include "avbd_basic/collision/avbd_cnt_fn_defs.h"
 #include "avbd_basic/constraint/avbd_pin_fg.h"
 #include "avbd_basic/vbd_2d_qd.h"
@@ -67,14 +68,14 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
 
     // left
     q = add_poly(
-      from_sf(m_view.getCenter()) + vec2f{-5000},
+      from_sf(m_view.getCenter()) + vec2f{-10000},
       vector_poly::square_shape(20, 10000)
     );
     get_qt<poly_qt>().flags()[q].immovable = true;
 
     // right
     q = add_poly(
-      from_sf(m_view.getCenter()) + vec2f{5000, 0},
+      from_sf(m_view.getCenter()) + vec2f{10000, 0},
       vector_poly::square_shape(20, 10000)
     );
     get_qt<poly_qt>().flags()[q].immovable = true;
@@ -92,7 +93,7 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
   // creating pyramid
   {
     // 80
-    unsigned base_size = scalers::get("pyramid base size", 150, 1);
+    unsigned base_size = scalers::get("pyramid base size", 110, 1);
     float box_size_x = 51;
     float box_size_y = 49;
     float base_bottom_y = 450;
@@ -125,11 +126,11 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
       if (i > 0) {
         cp6::pin_data pin;
         if (i % 2 == 1) {
-          pin.ra = {25, 25};
-          pin.rb = {25, -25};
+          pin.ra = {26, 26};
+          pin.rb = {26, -26};
         } else {
-          pin.ra = {-25, 25};
-          pin.rb = {-25, -25};
+          pin.ra = {-26, 26};
+          pin.rb = {-26, -26};
         }
 
         unsigned q = add_poly(
@@ -435,7 +436,8 @@ void avbd_test_state::update() {
   }
 
   // physic update
-  if (keybinds["T"]->ispressed || keybinds["T"]->timeheld > 0.1 || true) {
+
+  caller.update(dt, 1 / scalers::get("iterations", 100, 1), [&] {
     const float iterations = scalers::get("iterations", 100, 1);
     const float sub_steps = scalers::get("sub steps", 10, 1);
     const float impulse_sub_steps = scalers::get("impulse sub steps", 4, 1);
@@ -445,6 +447,7 @@ void avbd_test_state::update() {
     // caller.update(dt, h, [&] {
     // transforming collider data
     {
+      //PROFILE_SCOPE("transform");
       PA::inst().start("transform");
       for_each_i<qt_num>([&]<size_t QT> {
         cd_transform_start(get_qt<QT>().cd());
@@ -453,19 +456,26 @@ void avbd_test_state::update() {
       });
       PA::inst().end("transform");
     }
+    {
+      //PROFILE_SCOPE("broadphase");
 
-    PA::inst().start("bp");
-    get<cp6::sap_broadphase>(m_phy).update(reg);
-    PA::inst().end("bp");
+      PA::inst().start("bp");
+      get<cp6::sap_broadphase>(m_phy).update(reg);
+      PA::inst().end("bp");
+    }
+    {
+      //PROFILE_SCOPE("phaselink");
 
-    PA::inst().start("pl update");
-    get<cp6::phase_link_system>(m_phy).update(reg);
-    PA::inst().end("pl update");
-
-    PA::inst().start("np");
-    get<cp6::narrowphase_system>(m_phy).update(reg);
-    PA::inst().end("np");
-
+      PA::inst().start("pl update");
+      get<cp6::phase_link_system>(m_phy).update(reg);
+      PA::inst().end("pl update");
+    }
+    {
+      //PROFILE_SCOPE("narrowphase");
+      PA::inst().start("np");
+      get<cp6::narrowphase_system>(m_phy).update(reg);
+      PA::inst().end("np");
+    }
     // moving contacts so the liquid radius seems smaller to rigid bodies
     {
       auto &lp_tcnt_col_state = get<cp6::narrowphase_system>(m_phy)
@@ -477,14 +487,19 @@ void avbd_test_state::update() {
     }
 
     // must be updated before resolving collisions
-    PA::inst().start("pcnt update");
-    get<cp6::pcnt_system>(m_phy).update();
-    PA::inst().end("pcnt update");
+    {
+      //PROFILE_SCOPE("pcnt update");
+      PA::inst().start("pcnt update");
+      get<cp6::pcnt_system>(m_phy).update();
+      PA::inst().end("pcnt update");
+    }
+    {
+      //PROFILE_SCOPE("color update");
 
-    PA::inst().start("color update");
-    get<cp6::color_system>(m_phy).update(reg);
-    PA::inst().end("color update");
-
+      PA::inst().start("color update");
+      get<cp6::color_system>(m_phy).update(reg);
+      PA::inst().end("color update");
+    }
     // for_each_i<qt_num>([&]<size_t QT> {
     //   if constexpr (cp6::is_cqt<qt_t<QT>>::value) {
     //
@@ -503,7 +518,7 @@ void avbd_test_state::update() {
     // physics solve
     PA::inst().start("phy solve");
     {
-      PROFILE_SCOPE("phy solve");
+      //PROFILE_SCOPE("phy solve");
       // adding gravity
       {
         for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
@@ -522,11 +537,11 @@ void avbd_test_state::update() {
       // if (!flags::get("temporal sub steps", false))
       {
         {
-          PROFILE_SCOPE("start step");
+          //PROFILE_SCOPE("start step");
           get<cp6::avbd_system>(m_phy).start_step(reg, h);
         }
         for (unsigned i = 0; i < sub_steps; i++) {
-          PROFILE_SCOPE("step");
+          //PROFILE_SCOPE("step");
           get<cp6::avbd_system>(m_phy).step(reg, h);
         }
 
@@ -539,7 +554,7 @@ void avbd_test_state::update() {
         //   get<cp6::impulse_system>(m_phy).end_step(reg, h);
         // }
         {
-          PROFILE_SCOPE("end step");
+          //PROFILE_SCOPE("end step");
           get<cp6::avbd_system>(m_phy).end_step(reg, h);
         }
       }
@@ -571,8 +586,148 @@ void avbd_test_state::update() {
       }
     }
     PA::inst().end("phy solve");
-    PA::inst().end("update");
     // });
+  });
+  PA::inst().end("update");
+  {
+    // const float iterations = scalers::get("iterations", 100, 1);
+    // const float sub_steps = scalers::get("sub steps", 10, 1);
+    // const float impulse_sub_steps = scalers::get("impulse sub steps", 4, 1);
+    //
+    // const float h = 1.f / iterations;
+    //
+    // // caller.update(dt, h, [&] {
+    // // transforming collider data
+    // {
+    //   PA::inst().start("transform");
+    //   for_each_i<qt_num>([&]<size_t QT> {
+    //     cd_transform_start(get_qt<QT>().cd());
+    //     cd_transform(get_qt<QT>().cd(), get_qt<QT>().qd());
+    //     cd_transform_end(get_qt<QT>().cd());
+    //   });
+    //   PA::inst().end("transform");
+    // }
+    //
+    // PA::inst().start("bp");
+    // get<cp6::sap_broadphase>(m_phy).update(reg);
+    // PA::inst().end("bp");
+    //
+    // PA::inst().start("pl update");
+    // get<cp6::phase_link_system>(m_phy).update(reg);
+    // PA::inst().end("pl update");
+    //
+    // PA::inst().start("np");
+    // get<cp6::narrowphase_system>(m_phy).update(reg);
+    // PA::inst().end("np");
+    //
+    // // moving contacts so the liquid radius seems smaller to rigid bodies
+    // {
+    //   auto &lp_tcnt_col_state = get<cp6::narrowphase_system>(m_phy)
+    //                               .get_tcnt_data<liquid_qt, poly_qt>(reg);
+    //   for (unsigned i = 0; i < lp_tcnt_col_state.size(); i++) {
+    //     lp_tcnt_col_state[i].x2 += lp_tcnt_col_state[i].n
+    //                              * (liquid_kernal_collider_radius + 10);
+    //   }
+    // }
+    //
+    // // must be updated before resolving collisions
+    // PA::inst().start("pcnt update");
+    // get<cp6::pcnt_system>(m_phy).update();
+    // PA::inst().end("pcnt update");
+    //
+    // PA::inst().start("color update");
+    // get<cp6::color_system>(m_phy).update(reg);
+    // PA::inst().end("color update");
+    //
+    // // for_each_i<qt_num>([&]<size_t QT> {
+    // //   if constexpr (cp6::is_cqt<qt_t<QT>>::value) {
+    // //
+    // //     const auto &color_s = get<cp6::color_system>(m_phy);
+    // //     for (unsigned c = 0; c < color_s.color_num(reg); c++) {
+    // //       const basic_color_data &color = color_s.get_color_data<QT>(reg,
+    // c);
+    // //       std::cout << "c: "<< c <<"\n  ";
+    // //       for (unsigned cq = 0; cq < color.cq_num; cq++) {
+    // //         std::cout << color.to_q[cq] << " ";
+    // //       }
+    // //       std::cout << std::endl;
+    // //     }
+    // //   }
+    // // });
+    //
+    // // physics solve
+    // PA::inst().start("phy solve");
+    // {
+    //   //PROFILE_SCOPE("phy solve");
+    //   // adding gravity
+    //   {
+    //     for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
+    //       get_qt<poly_qt>().a_ext()[q].y += 981;
+    //     }
+    //
+    //     for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
+    //       get_qt<particle_qt>().a_ext()[q].y += 981;
+    //     }
+    //
+    //     for (unsigned q = 0; q < get_qt<liquid_qt>().size(); q++) {
+    //       get_qt<liquid_qt>().a_ext()[q].y += 981;
+    //     }
+    //   }
+    //
+    //   // if (!flags::get("temporal sub steps", false))
+    //   {
+    //     {
+    //       //PROFILE_SCOPE("start step");
+    //       get<cp6::avbd_system>(m_phy).start_step(reg, h);
+    //     }
+    //     for (unsigned i = 0; i < sub_steps; i++) {
+    //       //PROFILE_SCOPE("step");
+    //       get<cp6::avbd_system>(m_phy).step(reg, h);
+    //     }
+    //
+    //     // impulses
+    //     // {
+    //     //   get<cp6::impulse_system>(m_phy).start_step(reg, h);
+    //     //   for (unsigned i = 0; i < impulse_sub_steps; i++) {
+    //     //     get<cp6::impulse_system>(m_phy).step(reg, h);
+    //     //   }
+    //     //   get<cp6::impulse_system>(m_phy).end_step(reg, h);
+    //     // }
+    //     {
+    //       //PROFILE_SCOPE("end step");
+    //       get<cp6::avbd_system>(m_phy).end_step(reg, h);
+    //     }
+    //   }
+    //   // else {
+    //   //   for (unsigned i = 0; i < sub_steps; i++) {
+    //   //     for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
+    //   //       get_qt<poly_qt>().a_ext()[q].y = 981;
+    //   //     }
+    //   //
+    //   //     for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
+    //   //       get_qt<particle_qt>().a_ext()[q].y = 981;
+    //   //     }
+    //   //     //
+    //   //     // for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
+    //   //     //   get_qt<liquid_qt>().a_ext()[q].y = 981;
+    //   //     // }
+    //   //     get<cp6::avbd_system>(m_phy).start_step(reg, h / sub_steps);
+    //   //     get<cp6::avbd_system>(m_phy).step(reg, h / sub_steps);
+    //   //     get<cp6::avbd_system>(m_phy).end_step(reg, h / sub_steps);
+    //   //   }
+    //   // }
+    //   // clamping rotation
+    //   for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
+    //     get_qt<poly_qt>().q_dot()[q].z = clamp(
+    //       get_qt<poly_qt>().q_dot()[q].z,
+    //       -5,
+    //       5
+    //     );
+    //   }
+    // }
+    // PA::inst().end("phy solve");
+    // PA::inst().end("update");
+    // // });
   }
 
   // printing performance info every second
@@ -631,6 +786,7 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
 
   if (flags::get("draw_colors", true)) {
     auto &color_s = get<cp6::color_system>(m_phy);
+    color_s.update(reg);
     for_each_i<qt_num>([&]<size_t QT> {
       if constexpr (cp6::is_cqt<qt_t<QT>>::value) {
         for (unsigned c = 0; c < color_s.color_num(reg); c++) {

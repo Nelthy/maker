@@ -6,20 +6,20 @@
 #include "avbd_contact_set.h"
 #include "collision_basic/contact_set.h"
 #include "maths.h"
-#define PROFILE false
+#define PROFILE true 
 #include "profile.h"
 #include "thread_pool.h"
 #include "tri_utils.h"
 #include <new>
 #include <vector>
-
+#include <thread>
 // should only be included in cpp files.
 
 namespace cp6 {
 static float cnt_friction_coef = .5;
 static float cnt_col_thresh = 1;
 static float cnt_stick_thresh = 1;
-static unsigned task_num = 10;
+static unsigned task_num = std::thread::hardware_concurrency();
 
 inline vec2f get_relative_point(
   const vbd_3d_qd &qd,
@@ -532,8 +532,8 @@ inline bool add_derivs1(
 
   cp6::thread_pool::func_t add_derivs_task =
     [](cp6::task_data data, uint32_t tid) {
-      PROFILE_TID(tid);
-      PROFILE_SCOPE("add derivs1");
+      //PROFILE_TID(tid);
+      //PROFILE_SCOPE("add derivs1");
       t_data &d = data.ptr_as<t_data>();
       for (unsigned cq = d.start_cq; cq < d.start_cq + d.cq_amount; cq++) {
         unsigned q = d.color->to_q[cq];
@@ -672,8 +672,8 @@ inline bool add_derivs2(
 
   cp6::thread_pool::func_t add_derivs_task =
     [](cp6::task_data data, uint32_t tid) {
-      PROFILE_TID(tid);
-      PROFILE_SCOPE("add derivs2");
+      //PROFILE_TID(tid);
+      //PROFILE_SCOPE("add derivs2");
       t_data &d = data.ptr_as<t_data>();
       for (unsigned cq = d.start_cq; cq < d.start_cq + d.cq_amount; cq++) {
         unsigned q = d.color->to_q[cq];
@@ -796,7 +796,7 @@ inline bool update_avbd_vars(
   const QD2 &qd2,
   avbd_contact_2p_set &cnts
 ) {
-  PROFILE_SCOPE("update avbd vars");
+  //PROFILE_SCOPE("update avbd vars");
 
   struct alignas(std::hardware_destructive_interference_size) t_data {
     const QD1 *qd1;
@@ -817,8 +817,8 @@ inline bool update_avbd_vars(
 
   cp6::thread_pool::func_t update_avbd_vars_task =
     [](cp6::task_data data, uint32_t tid) {
-      PROFILE_SCOPE("update_avbd_vars");
-      PROFILE_TID(tid);
+      //PROFILE_SCOPE("update_avbd_vars");
+      //PROFILE_TID(tid);
       t_data &d = data.ptr_as<t_data>();
       for (unsigned cnt = d.start_cnt; cnt < d.start_cnt + d.cnt_amount; cnt++) {
         update_avbd_vars_impl(

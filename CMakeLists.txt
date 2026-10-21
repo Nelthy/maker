@@ -19,8 +19,6 @@ add_subdirectory(cp6_core)
 add_subdirectory(index_set_v5 index_set_b)
 add_subdirectory(sfml_state_man_v2 sfml_state_man_b)
 
-
-add_subdirectory(../utils utils_b)
 #[[
 generate debug build
 (cmake -G Ninja -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug)
