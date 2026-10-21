@@ -11,7 +11,6 @@ template<typename TW>
 struct avbd_system_tt {
   static constexpr auto vbd_qt_to_qt =
     generate_tuple_indirection<get_matching_ts<is_vbd_qt, qt_ts<TW>>, qt_ts<TW>>();
-  static constexpr unsigned fg_num = get_matching_num<is_avbd_fg, TW>();
 
   static constexpr unsigned vbd_qt_num = get_matching_num<is_vbd_qt, qt_ts<TW>>();
   static_assert(vbd_qt_num > 0);
