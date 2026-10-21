@@ -1,6 +1,3 @@
-TODO:
-    Basic Multithreading
-
 TODO MAYBE:
     make a building system
     make a car
