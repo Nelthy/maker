@@ -29,7 +29,6 @@
 #include <SFML/Graphics/PrimitiveType.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <cstddef>
-#include <profile.h>
 #include <utility>
 
 void on_main_spin() {

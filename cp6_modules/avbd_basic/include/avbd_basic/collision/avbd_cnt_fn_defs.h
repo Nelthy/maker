@@ -6,8 +6,6 @@
 #include "avbd_contact_set.h"
 #include "collision_basic/contact_set.h"
 #include "maths.h"
-#define PROFILE true 
-#include "profile.h"
 #include "thread_pool.h"
 #include "tri_utils.h"
 #include <new>
