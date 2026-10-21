@@ -21,14 +21,20 @@
 #include "scalers.h"
 
 #include "avbd_basic/constraint/avbd_pin_impl.h"
+#include "thread_pool.h"
 #include "tri_utils.h"
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/PrimitiveType.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <cstddef>
+#include <profile.h>
 #include <utility>
-void on_main_spin() {};
+
+void on_main_spin() {
+  static void *next = nullptr;
+  next = cp6::thread_pool::main_help(next);
+};
 
 template<unsigned QT>
 using qt_t = std::decay_t<decltype(std::declval<avbd_test_state>()
@@ -86,7 +92,7 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
   // creating pyramid
   {
     // 80
-    unsigned base_size = scalers::get("pyramid base size", 10, 1);
+    unsigned base_size = scalers::get("pyramid base size", 150, 1);
     float box_size_x = 51;
     float box_size_y = 49;
     float base_bottom_y = 450;
@@ -112,7 +118,7 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
 
   // creating chain
   {
-    unsigned chain_length = scalers::get("chain length", 10, 1);
+    unsigned chain_length = scalers::get("chain length", 0, 1);
     vec2f chain_start = from_sf(m_view.getCenter())
                       + vec2f{-400, -float(chain_length * 50)};
     for (unsigned i = 0; i < chain_length; i++) {
@@ -497,6 +503,7 @@ void avbd_test_state::update() {
     // physics solve
     PA::inst().start("phy solve");
     {
+      PROFILE_SCOPE("phy solve");
       // adding gravity
       {
         for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
@@ -512,10 +519,14 @@ void avbd_test_state::update() {
         }
       }
 
-      if (!flags::get("temporal sub steps", false)) {
-        get<cp6::avbd_system>(m_phy).start_step(reg, h);
-
+      // if (!flags::get("temporal sub steps", false))
+      {
+        {
+          PROFILE_SCOPE("start step");
+          get<cp6::avbd_system>(m_phy).start_step(reg, h);
+        }
         for (unsigned i = 0; i < sub_steps; i++) {
+          PROFILE_SCOPE("step");
           get<cp6::avbd_system>(m_phy).step(reg, h);
         }
 
@@ -527,27 +538,29 @@ void avbd_test_state::update() {
         //   }
         //   get<cp6::impulse_system>(m_phy).end_step(reg, h);
         // }
-
-        get<cp6::avbd_system>(m_phy).end_step(reg, h);
-      }
-      else {
-        for (unsigned i = 0; i < sub_steps; i++) {
-          for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
-            get_qt<poly_qt>().a_ext()[q].y = 981;
-          }
-
-          for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
-            get_qt<particle_qt>().a_ext()[q].y = 981;
-          }
-          //
-          // for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
-          //   get_qt<liquid_qt>().a_ext()[q].y = 981;
-          // }
-          get<cp6::avbd_system>(m_phy).start_step(reg, h / sub_steps);
-          get<cp6::avbd_system>(m_phy).step(reg, h / sub_steps);
-          get<cp6::avbd_system>(m_phy).end_step(reg, h / sub_steps);
+        {
+          PROFILE_SCOPE("end step");
+          get<cp6::avbd_system>(m_phy).end_step(reg, h);
         }
       }
+      // else {
+      //   for (unsigned i = 0; i < sub_steps; i++) {
+      //     for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
+      //       get_qt<poly_qt>().a_ext()[q].y = 981;
+      //     }
+      //
+      //     for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
+      //       get_qt<particle_qt>().a_ext()[q].y = 981;
+      //     }
+      //     //
+      //     // for (unsigned q = 0; q < get_qt<particle_qt>().size(); q++) {
+      //     //   get_qt<liquid_qt>().a_ext()[q].y = 981;
+      //     // }
+      //     get<cp6::avbd_system>(m_phy).start_step(reg, h / sub_steps);
+      //     get<cp6::avbd_system>(m_phy).step(reg, h / sub_steps);
+      //     get<cp6::avbd_system>(m_phy).end_step(reg, h / sub_steps);
+      //   }
+      // }
       // clamping rotation
       for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
         get_qt<poly_qt>().q_dot()[q].z = clamp(

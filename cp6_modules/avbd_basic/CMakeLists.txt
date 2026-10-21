@@ -15,5 +15,6 @@ target_include_directories(avbd_basic
 
 target_link_libraries(avbd_basic PUBLIC avbd)
 target_link_libraries(avbd_basic PUBLIC collision_basic)
+target_link_libraries(avbd_basic PUBLIC utils)
 
 

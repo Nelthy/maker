@@ -2,6 +2,7 @@
 #include "avbd_test_state.h"
 #include "flag_state.h"
 #include "scalers.h"
+#include "thread_pool.h"
 
 int main() {
   scalers::get("fps");
@@ -10,5 +11,8 @@ int main() {
   app app("cp6_tests");
   app.push_new_state<flag_state>();
   app.push_new_state<avbd_test_state>();
+
+  cp6::thread_pool::start_spinning(6);
   app.start();
+  cp6::thread_pool::stop_spinning();
 }

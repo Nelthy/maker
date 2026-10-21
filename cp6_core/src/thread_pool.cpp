@@ -2,7 +2,11 @@
 #include <thread>
 
 namespace cp6 {
-void *thread_pool::add_task(func_t func, task_data data, bool start_immediately) {
+void *thread_pool::add_task(
+  func_t func,
+  task_data data,
+  bool start_immediately
+) {
   inst().list_mtx.lock();
 
   task *new_task = nullptr;
@@ -112,6 +116,7 @@ void thread_pool::stop_spinning() {
   if (inst().is_spinning) {
     inst().is_spinning = false;
     // wait for all the threads to start spinning
+
     for (uint32_t t = 0; t < inst().m_thread_states.size(); t++) {
       while (inst().m_thread_states[t]->is_spinning.load() == false) {};
     }
@@ -199,7 +204,9 @@ void thread_pool::thread_spin(uint32_t tid) {
     }
 
     task_state expected = task_state::idle;
-    if (curr_task->state.compare_exchange_strong(expected, task_state::claimed)) {
+    if (
+      curr_task->state.compare_exchange_strong(expected, task_state::claimed)
+    ) {
       assert(curr_task->state.load() == task_state::claimed);
 
       if (curr_task->func(curr_task->data, tid + 1)) {
