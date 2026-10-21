@@ -358,7 +358,7 @@ void avbd_test_state::update() {
 
   const float iterations = scalers::get("iterations", 100, 1);
   const float h = 1.f / iterations;
-  caller.update(dt, h, [&] {
+  caller.update(dt, max(dt, h), [&] {
     const float sub_steps = scalers::get("sub steps", 10, 1);
     const float impulse_sub_steps = scalers::get("impulse sub steps", 4, 1);
 

@@ -8,16 +8,18 @@
 #include "maths.h"
 #include "thread_pool.h"
 #include "tri_utils.h"
+#include <cassert>
 #include <new>
-#include <vector>
 #include <thread>
+#include <vector>
 // should only be included in cpp files.
 
 namespace cp6 {
 static float cnt_friction_coef = .5;
 static float cnt_col_thresh = 1;
 static float cnt_stick_thresh = 1;
-static unsigned task_num = std::thread::hardware_concurrency();
+static unsigned max_task_num = std::thread::hardware_concurrency() * 2;
+static unsigned min_task_indices = 300;
 
 inline vec2f get_relative_point(
   const vbd_3d_qd &qd,
@@ -530,8 +532,8 @@ inline bool add_derivs1(
 
   cp6::thread_pool::func_t add_derivs_task =
     [](cp6::task_data data, uint32_t tid) {
-      //PROFILE_TID(tid);
-      //PROFILE_SCOPE("add derivs1");
+      // PROFILE_TID(tid);
+      // PROFILE_SCOPE("add derivs1");
       t_data &d = data.ptr_as<t_data>();
       for (unsigned cq = d.start_cq; cq < d.start_cq + d.cq_amount; cq++) {
         unsigned q = d.color->to_q[cq];
@@ -563,7 +565,7 @@ inline bool add_derivs1(
       return true;
     };
 
-  const static unsigned task_num = cp6::task_num;
+  const static unsigned task_num = cp6::max_task_num;
   static std::vector<t_data *> task_datas = [] {
     std::vector<t_data *> ret(task_num);
     for (unsigned i = 0; i < task_num; i++) { ret[i] = new t_data{}; }
@@ -572,53 +574,114 @@ inline bool add_derivs1(
 
   static std::vector<void *> task_handles(task_num);
 
-  unsigned start_cq = 0;
+  auto launch_task =
+    [&](t_data &tdata, void *&task_handle, unsigned start, unsigned amount) {
+      tdata.qd1 = &qd1;
+      tdata.qd2 = &qd2;
+      tdata.cnts = &cnts;
+      tdata.color = &color;
+      tdata.q_to_cnt = &q_to_cnt;
+      tdata.start_cq = start;
+      tdata.cq_amount = amount;
 
-  for (unsigned i = 0; i < task_num - 1; i++) {
-    task_datas[i]->qd1 = &qd1;
-    task_datas[i]->qd2 = &qd2;
-    task_datas[i]->cnts = &cnts;
-    task_datas[i]->color = &color;
-    task_datas[i]->q_to_cnt = &q_to_cnt;
-    task_datas[i]->start_cq = start_cq;
-    task_datas[i]->cq_amount = color.cq_num / task_num;
+      task_handle = cp6::thread_pool::add_task(add_derivs_task, &tdata);
+    };
 
-    task_handles[i] = cp6::thread_pool::add_task(
-      add_derivs_task,
-      task_datas[i]
+  if (min_task_indices * max_task_num < color.cq_num) {
+    unsigned start = 0;
+
+    for (unsigned i = 0; i < max_task_num - 1; i++) {
+      launch_task(
+        *task_datas[i],
+        task_handles[i],
+        start,
+        color.cq_num / max_task_num
+      );
+      start += color.cq_num / max_task_num;
+    }
+
+    launch_task(
+      *task_datas.back(),
+      task_handles.back(),
+      start,
+      color.cq_num / max_task_num + color.cq_num % max_task_num
     );
+    start += color.cq_num / max_task_num + color.cq_num % max_task_num;
 
-    start_cq += color.cq_num / task_num;
-  }
-  {
-    task_datas.back()->qd1 = &qd1;
-    task_datas.back()->qd2 = &qd2;
-    task_datas.back()->cnts = &cnts;
-    task_datas.back()->color = &color;
-    task_datas.back()->q_to_cnt = &q_to_cnt;
-    task_datas.back()->start_cq = start_cq;
-    task_datas.back()->cq_amount = color.cq_num / task_num
-                                 + color.cq_num % task_num;
-
-    task_handles.back() = cp6::thread_pool::add_task(
-      add_derivs_task,
-      task_datas.back()
-    );
-
-    start_cq += color.cq_num / task_num + color.cq_num % task_num;
-  }
-  assert(start_cq == color.cq_num);
-
-  for (unsigned i = 0; i < task_num; i++) {
-    while (!cp6::thread_pool::is_done(task_handles[i])) { on_main_spin(); }
+    assert(start == color.cq_num);
+  } else {
+    unsigned start = 0;
+    for (unsigned i = 0; i < max_task_num; i++) {
+      unsigned amount = min_task_indices;
+      if (start + amount > color.cq_num) { amount = color.cq_num - start; }
+      launch_task(*task_datas[i], task_handles[i], start, amount);
+      start += amount;
+    }
+    assert(start == color.cq_num);
   }
 
-  for (unsigned i = 0; i < task_num; i++) {
-    cp6::thread_pool::remove_task(task_handles[i]);
-    task_handles[i] = nullptr;
+  for (unsigned i = 0; i < max_task_num; i++) {
+    while (task_handles[i] && !cp6::thread_pool::is_done(task_handles[i])) {
+      on_main_spin();
+    }
+  }
+
+  for (unsigned i = 0; i < max_task_num; i++) {
+    if (task_handles[i]) {
+      cp6::thread_pool::remove_task(task_handles[i]);
+      task_handles[i] = nullptr;
+    }
   }
 
   return true;
+
+  // unsigned start_cq = 0;
+  //
+  // for (unsigned i = 0; i < task_num - 1; i++) {
+  //   task_datas[i]->qd1 = &qd1;
+  //   task_datas[i]->qd2 = &qd2;
+  //   task_datas[i]->cnts = &cnts;
+  //   task_datas[i]->color = &color;
+  //   task_datas[i]->q_to_cnt = &q_to_cnt;
+  //   task_datas[i]->start_cq = start_cq;
+  //   task_datas[i]->cq_amount = color.cq_num / task_num;
+  //
+  //   task_handles[i] = cp6::thread_pool::add_task(
+  //     add_derivs_task,
+  //     task_datas[i]
+  //   );
+  //
+  //   start_cq += color.cq_num / task_num;
+  // }
+  // {
+  //   task_datas.back()->qd1 = &qd1;
+  //   task_datas.back()->qd2 = &qd2;
+  //   task_datas.back()->cnts = &cnts;
+  //   task_datas.back()->color = &color;
+  //   task_datas.back()->q_to_cnt = &q_to_cnt;
+  //   task_datas.back()->start_cq = start_cq;
+  //   task_datas.back()->cq_amount = color.cq_num / task_num
+  //                                + color.cq_num % task_num;
+  //
+  //   task_handles.back() = cp6::thread_pool::add_task(
+  //     add_derivs_task,
+  //     task_datas.back()
+  //   );
+  //
+  //   start_cq += color.cq_num / task_num + color.cq_num % task_num;
+  // }
+  // assert(start_cq == color.cq_num);
+  //
+  // for (unsigned i = 0; i < task_num; i++) {
+  //   while (!cp6::thread_pool::is_done(task_handles[i])) { on_main_spin(); }
+  // }
+  //
+  // for (unsigned i = 0; i < task_num; i++) {
+  //   cp6::thread_pool::remove_task(task_handles[i]);
+  //   task_handles[i] = nullptr;
+  // }
+  //
+  // return true;
 
   // for (unsigned cq = 0; cq < color.cq_num; cq++) {
   //   unsigned q = color.to_q[cq];
@@ -670,8 +733,8 @@ inline bool add_derivs2(
 
   cp6::thread_pool::func_t add_derivs_task =
     [](cp6::task_data data, uint32_t tid) {
-      //PROFILE_TID(tid);
-      //PROFILE_SCOPE("add derivs2");
+      // PROFILE_TID(tid);
+      // PROFILE_SCOPE("add derivs2");
       t_data &d = data.ptr_as<t_data>();
       for (unsigned cq = d.start_cq; cq < d.start_cq + d.cq_amount; cq++) {
         unsigned q = d.color->to_q[cq];
@@ -703,7 +766,7 @@ inline bool add_derivs2(
       return true;
     };
 
-  const static unsigned task_num = cp6::task_num;
+  const static unsigned task_num = cp6::max_task_num;
   static std::vector<t_data *> task_datas = [] {
     std::vector<t_data *> ret(task_num);
     for (unsigned i = 0; i < task_num; i++) { ret[i] = new t_data{}; }
@@ -712,53 +775,114 @@ inline bool add_derivs2(
 
   static std::vector<void *> task_handles(task_num);
 
-  unsigned start_cq = 0;
+  auto launch_task =
+    [&](t_data &tdata, void *&task_handle, unsigned start, unsigned amount) {
+      tdata.qd1 = &qd1;
+      tdata.qd2 = &qd2;
+      tdata.cnts = &cnts;
+      tdata.color = &color;
+      tdata.q_to_cnt = &q_to_cnt;
+      tdata.start_cq = start;
+      tdata.cq_amount = amount;
 
-  for (unsigned i = 0; i < task_num - 1; i++) {
-    task_datas[i]->qd1 = &qd1;
-    task_datas[i]->qd2 = &qd2;
-    task_datas[i]->cnts = &cnts;
-    task_datas[i]->color = &color;
-    task_datas[i]->q_to_cnt = &q_to_cnt;
-    task_datas[i]->start_cq = start_cq;
-    task_datas[i]->cq_amount = color.cq_num / task_num;
+      task_handle = cp6::thread_pool::add_task(add_derivs_task, &tdata);
+    };
 
-    task_handles[i] = cp6::thread_pool::add_task(
-      add_derivs_task,
-      task_datas[i]
+  if (min_task_indices * max_task_num < color.cq_num) {
+    unsigned start = 0;
+
+    for (unsigned i = 0; i < max_task_num - 1; i++) {
+      launch_task(
+        *task_datas[i],
+        task_handles[i],
+        start,
+        color.cq_num / max_task_num
+      );
+      start += color.cq_num / max_task_num;
+    }
+
+    launch_task(
+      *task_datas.back(),
+      task_handles.back(),
+      start,
+      color.cq_num / max_task_num + color.cq_num % max_task_num
     );
+    start += color.cq_num / max_task_num + color.cq_num % max_task_num;
 
-    start_cq += color.cq_num / task_num;
-  }
-  {
-    task_datas.back()->qd1 = &qd1;
-    task_datas.back()->qd2 = &qd2;
-    task_datas.back()->cnts = &cnts;
-    task_datas.back()->color = &color;
-    task_datas.back()->q_to_cnt = &q_to_cnt;
-    task_datas.back()->start_cq = start_cq;
-    task_datas.back()->cq_amount = color.cq_num / task_num
-                                 + color.cq_num % task_num;
-
-    task_handles.back() = cp6::thread_pool::add_task(
-      add_derivs_task,
-      task_datas.back()
-    );
-
-    start_cq += color.cq_num / task_num + color.cq_num % task_num;
-  }
-  assert(start_cq == color.cq_num);
-
-  for (unsigned i = 0; i < task_num; i++) {
-    while (!cp6::thread_pool::is_done(task_handles[i])) { on_main_spin(); }
+    assert(start == color.cq_num);
+  } else {
+    unsigned start = 0;
+    for (unsigned i = 0; i < max_task_num; i++) {
+      unsigned amount = min_task_indices;
+      if (start + amount > color.cq_num) { amount = color.cq_num - start; }
+      launch_task(*task_datas[i], task_handles[i], start, amount);
+      start += amount;
+    }
+    assert(start == color.cq_num);
   }
 
-  for (unsigned i = 0; i < task_num; i++) {
-    cp6::thread_pool::remove_task(task_handles[i]);
-    task_handles[i] = nullptr;
+  for (unsigned i = 0; i < max_task_num; i++) {
+    while (task_handles[i] && !cp6::thread_pool::is_done(task_handles[i])) {
+      on_main_spin();
+    }
+  }
+
+  for (unsigned i = 0; i < max_task_num; i++) {
+    if (task_handles[i]) {
+      cp6::thread_pool::remove_task(task_handles[i]);
+      task_handles[i] = nullptr;
+    }
   }
 
   return true;
+  //
+  // unsigned start_cq = 0;
+  //
+  // for (unsigned i = 0; i < task_num - 1; i++) {
+  //   task_datas[i]->qd1 = &qd1;
+  //   task_datas[i]->qd2 = &qd2;
+  //   task_datas[i]->cnts = &cnts;
+  //   task_datas[i]->color = &color;
+  //   task_datas[i]->q_to_cnt = &q_to_cnt;
+  //   task_datas[i]->start_cq = start_cq;
+  //   task_datas[i]->cq_amount = color.cq_num / task_num;
+  //
+  //   task_handles[i] = cp6::thread_pool::add_task(
+  //     add_derivs_task,
+  //     task_datas[i]
+  //   );
+  //
+  //   start_cq += color.cq_num / task_num;
+  // }
+  // {
+  //   task_datas.back()->qd1 = &qd1;
+  //   task_datas.back()->qd2 = &qd2;
+  //   task_datas.back()->cnts = &cnts;
+  //   task_datas.back()->color = &color;
+  //   task_datas.back()->q_to_cnt = &q_to_cnt;
+  //   task_datas.back()->start_cq = start_cq;
+  //   task_datas.back()->cq_amount = color.cq_num / task_num
+  //                                + color.cq_num % task_num;
+  //
+  //   task_handles.back() = cp6::thread_pool::add_task(
+  //     add_derivs_task,
+  //     task_datas.back()
+  //   );
+  //
+  //   start_cq += color.cq_num / task_num + color.cq_num % task_num;
+  // }
+  // assert(start_cq == color.cq_num);
+  //
+  // for (unsigned i = 0; i < task_num; i++) {
+  //   while (!cp6::thread_pool::is_done(task_handles[i])) { on_main_spin(); }
+  // }
+  //
+  // for (unsigned i = 0; i < task_num; i++) {
+  //   cp6::thread_pool::remove_task(task_handles[i]);
+  //   task_handles[i] = nullptr;
+  // }
+  //
+  // return true;
   // for (unsigned cq = 0; cq < color.cq_num; cq++) {
   //   unsigned q = color.to_q[cq];
   //   const unsigned *to_cnt = q_to_cnt.get_q_to_cnt(q);
@@ -794,7 +918,7 @@ inline bool update_avbd_vars(
   const QD2 &qd2,
   avbd_contact_2p_set &cnts
 ) {
-  //PROFILE_SCOPE("update avbd vars");
+  // PROFILE_SCOPE("update avbd vars");
 
   struct alignas(std::hardware_destructive_interference_size) t_data {
     const QD1 *qd1;
@@ -804,21 +928,21 @@ inline bool update_avbd_vars(
     unsigned cnt_amount;
   };
 
-  const static unsigned task_num = cp6::task_num;
   static std::vector<t_data *> task_datas = [] {
-    std::vector<t_data *> ret(task_num);
-    for (unsigned i = 0; i < task_num; i++) { ret[i] = new t_data{}; }
+    std::vector<t_data *> ret(max_task_num);
+    for (unsigned i = 0; i < max_task_num; i++) { ret[i] = new t_data{}; }
     return std::move(ret);
   }();
 
-  static std::vector<void *> task_handles(task_num);
+  static std::vector<void *> task_handles(max_task_num);
 
   cp6::thread_pool::func_t update_avbd_vars_task =
     [](cp6::task_data data, uint32_t tid) {
-      //PROFILE_SCOPE("update_avbd_vars");
-      //PROFILE_TID(tid);
+      // PROFILE_SCOPE("update_avbd_vars");
+      // PROFILE_TID(tid);
       t_data &d = data.ptr_as<t_data>();
-      for (unsigned cnt = d.start_cnt; cnt < d.start_cnt + d.cnt_amount; cnt++) {
+      for (unsigned cnt = d.start_cnt; cnt < d.start_cnt + d.cnt_amount;
+           cnt++) {
         update_avbd_vars_impl(
           d.cnts->operator[](cnt).cnt1,
           d.cnts->operator[](cnt).q1,
@@ -839,46 +963,61 @@ inline bool update_avbd_vars(
       return true;
     };
 
-  unsigned start_cnt = 0;
+  auto launch_task =
+    [&](t_data &tdata, void *&task_handle, unsigned start, unsigned amount) {
+      tdata.qd1 = &qd1;
+      tdata.qd2 = &qd2;
+      tdata.cnts = &cnts;
+      tdata.start_cnt = start;
+      tdata.cnt_amount = amount;
 
-  for (unsigned i = 0; i < task_num - 1; i++) {
-    task_datas[i]->qd1 = &qd1;
-    task_datas[i]->qd2 = &qd2;
-    task_datas[i]->cnts = &cnts;
-    task_datas[i]->start_cnt = start_cnt;
-    task_datas[i]->cnt_amount = cnts.size() / task_num;
+      task_handle = cp6::thread_pool::add_task(update_avbd_vars_task, &tdata);
+    };
 
-    task_handles[i] = cp6::thread_pool::add_task(
-      update_avbd_vars_task,
-      task_datas[i]
+  if (min_task_indices * max_task_num < cnts.size()) {
+    unsigned start = 0;
+
+    for (unsigned i = 0; i < max_task_num - 1; i++) {
+      launch_task(
+        *task_datas[i],
+        task_handles[i],
+        start,
+        cnts.size() / max_task_num
+      );
+      start += cnts.size() / max_task_num;
+    }
+
+    launch_task(
+      *task_datas.back(),
+      task_handles.back(),
+      start,
+      cnts.size() / max_task_num + cnts.size() % max_task_num
     );
+    start += cnts.size() / max_task_num + cnts.size() % max_task_num;
 
-    start_cnt += cnts.size() / task_num;
-  }
-  {
-    task_datas.back()->qd1 = &qd1;
-    task_datas.back()->qd2 = &qd2;
-    task_datas.back()->cnts = &cnts;
-    task_datas.back()->start_cnt = start_cnt;
-    task_datas.back()->cnt_amount = cnts.size() / task_num
-                                 + cnts.size() % task_num;
-
-    task_handles.back() = cp6::thread_pool::add_task(
-      update_avbd_vars_task,
-      task_datas.back()
-    );
-
-    start_cnt += cnts.size() / task_num + cnts.size() % task_num;
-  }
-  assert(start_cnt == cnts.size());
-
-  for (unsigned i = 0; i < task_num; i++) {
-    while (!cp6::thread_pool::is_done(task_handles[i])) { on_main_spin(); }
+    assert(start == cnts.size());
+  } else {
+    unsigned start = 0;
+    for (unsigned i = 0; i < max_task_num; i++) {
+      unsigned amount = min_task_indices;
+      if (start + amount > cnts.size()) { amount = cnts.size() - start; }
+      launch_task(*task_datas[i], task_handles[i], start, amount);
+      start += amount;
+    }
+    assert(start == cnts.size());
   }
 
-  for (unsigned i = 0; i < task_num; i++) {
-    cp6::thread_pool::remove_task(task_handles[i]);
-    task_handles[i] = nullptr;
+  for (unsigned i = 0; i < max_task_num; i++) {
+    while (task_handles[i] && !cp6::thread_pool::is_done(task_handles[i])) {
+      on_main_spin();
+    }
+  }
+
+  for (unsigned i = 0; i < max_task_num; i++) {
+    if (task_handles[i]) {
+      cp6::thread_pool::remove_task(task_handles[i]);
+      task_handles[i] = nullptr;
+    }
   }
 
   return true;
