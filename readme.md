@@ -1,13 +1,6 @@
 This project revamps an old physics engine I stopped actively working on in February 2026. I got distracted by Vulkan and updating index_set before I could implement many features. This is me going back to finish what I started.
 
-This engine has:
-	 Fully working graph coloring (allowing Gauss-Seidel to be paralyzed).
-	 Polygon and circle colliders.
-        GJK for poly-poly, SAT for poly-circle, and radius check for circle-circle
-	 Three coordinate types: rigid body, particle, and liquid particle.
-	 Temporary contact.
-	 Persistent contact.
-	 Pin constraint.
+This engine has: Fully working graph coloring (allowing Gauss-Seidel to be paralyzed). Polygon and circle colliders. GJK for poly-poly, SAT for poly-circle, and radius check for circle-circle. Three coordinate types: rigid body, particle, and liquid particle. Temporary contacts, Persistent contacts, and Pin constraints.
 	
 The main goal of this engine is compile-time flexibility. You can completely add/remove entire coordinate types, modify the interactions between them, and change the systems that act on them with little effort.
 
