@@ -4,6 +4,7 @@
 #include "avbd_basic/constraint/avbd_pin_fg.h"
 #include "avbd_basic/vbd_2d_qd.h"
 #include "collision/pcnt_system.h"
+#include "collision_basic/contact_set.h"
 #include "collision_basic/narrowphase_fns.h"
 #include "collision_basic/narrowphase_update_fns.h"
 #include "collision_basic/overlapping_defs.h"
@@ -37,7 +38,8 @@ void on_main_spin() {
 };
 
 template<unsigned QT>
-using qt_t = std::decay_t<decltype(std::declval<avbd_test_state>().get_qt<QT>())>;
+using qt_t = std::decay_t<decltype(std::declval<avbd_test_state>()
+                                     .get_qt<QT>())>;
 
 avbd_test_state::avbd_test_state(state_man &man) : state(man) {
   reg_t &reg_s = get<reg_t>(m_phy);
@@ -65,18 +67,23 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
     get_qt<poly_qt>().flags()[q].immovable = true;
 
     // left
-    q = add_poly(from_sf(m_view.getCenter()) + vec2f{-10000}, vector_poly::square_shape(20, 10000));
+    q = add_poly(
+      from_sf(m_view.getCenter()) + vec2f{-10000},
+      vector_poly::square_shape(20, 10000)
+    );
     get_qt<poly_qt>().flags()[q].immovable = true;
 
     // right
-    q =
-      add_poly(from_sf(m_view.getCenter()) + vec2f{10000, 0}, vector_poly::square_shape(20, 10000));
+    q = add_poly(
+      from_sf(m_view.getCenter()) + vec2f{10000, 0},
+      vector_poly::square_shape(20, 10000)
+    );
     get_qt<poly_qt>().flags()[q].immovable = true;
   }
 
   // creating stack
   vec2f bottom_pos{0, 450};
-  for (unsigned i = 0; i < scalers::get("stack height", 00, 20); i++) {
+  for (unsigned i = 0; i < scalers::get("stack height (reset)", 00, 20); i++) {
     add_poly(
       bottom_pos - vec2f{0, 50 * 0.25f * i},
       vector_poly::square_shape(10 + (0.01 * float(i)), 0.25)
@@ -86,7 +93,7 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
   // creating pyramid
   {
     // 80
-    unsigned base_size = scalers::get("pyramid base size", 10, 1);
+    unsigned base_size = scalers::get("pyramid base size (reset)", 10, 1);
     float box_size_x = 51;
     float box_size_y = 49;
     float base_bottom_y = 450;
@@ -96,9 +103,13 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
       unsigned boxes_in_row = base_size - r;
       float row_y = base_bottom_y - (r + 0.5) * box_size_y;
       float row_total_width = boxes_in_row * box_size_x;
-      float row_start = base_center_x - row_total_width / 2.f + box_size_x / 2.f;
+      float row_start = base_center_x - row_total_width / 2.f
+                      + box_size_x / 2.f;
       for (unsigned i = 0; i < boxes_in_row; i++) {
-        if (r % 2 == 0 || i % 2 == 0 || !flags::get("sparse pyramid", false)) {
+        if (
+          r % 2 == 0 || i % 2 == 0
+          || !flags::get("sparse pyramid (reset)", false)
+        ) {
           float box_x = row_start + i * box_size_x;
           add_poly({box_x, row_y}, vector_poly::square_shape());
         }
@@ -106,13 +117,11 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
     }
   }
 
-  // add_poly({358, 293}, vector_poly::square_shape(2, 2));
-  // add_poly({289, 395}, vector_poly::square_shape(2, 2));
-
   // creating chain
   {
-    unsigned chain_length = scalers::get("chain length", 0, 1);
-    vec2f chain_start = from_sf(m_view.getCenter()) + vec2f{-400, -float(chain_length * 50)};
+    unsigned chain_length = scalers::get("chain length (reset)", 0, 1);
+    vec2f chain_start = from_sf(m_view.getCenter())
+                      + vec2f{-400, -float(chain_length * 50)};
     for (unsigned i = 0; i < chain_length; i++) {
       if (i > 0) {
         cp6::pin_data pin;
@@ -124,11 +133,18 @@ avbd_test_state::avbd_test_state(state_man &man) : state(man) {
           pin.rb = {-26, -26};
         }
 
-        unsigned q = add_poly(chain_start + vec2f{0, float(i * 51)}, vector_poly::square_shape());
-        get<cp6::avbd_pin_fg>(m_phy).add_pin<poly_qt, poly_qt>(reg, q - 1, q, pin);
+        unsigned q = add_poly(
+          chain_start + vec2f{0, float(i * 51)},
+          vector_poly::square_shape()
+        );
+        get<cp6::avbd_pin_fg>(m_phy)
+          .add_pin<poly_qt, poly_qt>(reg, q - 1, q, pin);
       } else {
         // first link
-        unsigned q = add_poly(chain_start + vec2f{0, float(i * 51)}, vector_poly::square_shape());
+        unsigned q = add_poly(
+          chain_start + vec2f{0, float(i * 51)},
+          vector_poly::square_shape()
+        );
         // get_qt<poly_qt>().flags()[q].dont_resolve_collisions = true;
         // get_qt<poly_qt>().flags()[q].immovable = true;
       }
@@ -167,37 +183,47 @@ void avbd_test_state::update() {
     scalers::set("fps", 1.f / dt);
     scalers::set(
       "collider number",
-      get_qt<poly_qt>().size() + get_qt<particle_qt>().size() + get_qt<liquid_qt>().size()
+      get_qt<poly_qt>().size() + get_qt<particle_qt>().size()
+        + get_qt<liquid_qt>().size()
     );
     scalers::set(
       "contact number",
       get<cp6::pcnt_system>(m_phy).get_pcnt_data<poly_qt, poly_qt>(reg).size()
 
     );
-    cp6::cnt_friction_coef = scalers::get("friction coef", cp6::cnt_friction_coef, 0.1);
+    cp6::cnt_friction_coef = scalers::get(
+      "friction coef",
+      cp6::cnt_friction_coef,
+      0.1
+    );
     // cp6::imp_friction_coef = cp6::cnt_friction_coef;
     // cp6::cnt_k = scalers::get("k", cp6::cnt_k, 10'000);
-    cp6::cnt_col_thresh = scalers::get("collision thresh", cp6::cnt_col_thresh, 0.1);
-    cp6::cnt_stick_thresh = scalers::get("stick thresh", cp6::cnt_stick_thresh, 0.01);
-    // cp6::cnt_gamma = scalers::get("pcnt gamma", cp6::cnt_gamma, (1 -
-    // cp6::cnt_gamma)); cp6::pcnt_alpha = scalers::get("pcnt alpha",
-    // cp6::pcnt_alpha, 1 - cp6::pcnt_alpha); cp6::cnt_beta = scalers::get("pcnt
-    // beta", cp6::cnt_beta, cp6::cnt_beta); cp6::bounce =
-    // scalers::get("bounce", cp6::bounce, 0.1);
+    // cp6::cnt_col_thresh = scalers::get("collision thresh",
+    // cp6::cnt_col_thresh, 0.1); cp6::cnt_stick_thresh = scalers::get("stick
+    // thresh", cp6::cnt_stick_thresh, 0.01); cp6::cnt_gamma =
+    // scalers::get("pcnt gamma", cp6::cnt_gamma, (1 - cp6::cnt_gamma));
+    // cp6::pcnt_alpha = scalers::get("pcnt alpha", cp6::pcnt_alpha, 1 -
+    // cp6::pcnt_alpha); cp6::cnt_beta = scalers::get("pcnt beta",
+    // cp6::cnt_beta, cp6::cnt_beta); cp6::bounce = scalers::get("bounce",
+    // cp6::bounce, 0.1);
 
-    cp6::liquid_alpha = scalers::get("liquid_alpha", cp6::liquid_alpha, 0.01);
-    cp6::liquid_beta = scalers::get("liquid_beta", cp6::liquid_beta, cp6::liquid_beta);
-    cp6::liquid_gamma = scalers::get("liquid_gamma", cp6::liquid_gamma, 0.01);
-    cp6::liquid_init_k = scalers::get("liquid_init_k", cp6::liquid_init_k, cp6::liquid_init_k);
-    cp6::liquid_kernel_rad = scalers::get("h_rad", cp6::liquid_kernel_rad, 1);
-    cp6::liquid_target_rho =
-      scalers::get("target_rho", cp6::liquid_target_rho, cp6::liquid_target_rho / 10.f);
-    cp6::liquid_avbd = flags::get("liquid avbd", cp6::liquid_avbd);
+    // cp6::liquid_alpha = scalers::get("liquid_alpha", cp6::liquid_alpha,
+    // 0.01); cp6::liquid_beta = scalers::get("liquid_beta", cp6::liquid_beta,
+    // cp6::liquid_beta); cp6::liquid_gamma = scalers::get("liquid_gamma",
+    // cp6::liquid_gamma, 0.01); cp6::liquid_init_k =
+    // scalers::get("liquid_init_k", cp6::liquid_init_k, cp6::liquid_init_k);
+    // cp6::liquid_kernel_rad = scalers::get("h_rad", cp6::liquid_kernel_rad,
+    // 1); cp6::liquid_target_rho =
+    //   scalers::get("target_rho", cp6::liquid_target_rho,
+    //   cp6::liquid_target_rho / 10.f);
+    // cp6::liquid_avbd = flags::get("liquid avbd", cp6::liquid_avbd);
 
     // setting col state constants
     {
-      get<cp6::avbd_pcnt_fg>(m_phy).get_avbd_pcnt_data<poly_qt, poly_qt>(reg).alpha =
-        scalers::get("pp_alpha", .90, 0.01);
+      get<cp6::avbd_pcnt_fg>(m_phy)
+        .get_avbd_pcnt_data<poly_qt, poly_qt>(reg)
+        .alpha = 0.90;
+      // scalers::get("pp_alpha", .90, 0.01);
       // get<cp6::avbd_tcnt_fg>(m_phy).get_avbd_tcnt_data<liquid_qt,
       // poly_qt>(reg).alpha =
       //   scalers::get("lp_alpha", .55, 0.01);
@@ -215,7 +241,7 @@ void avbd_test_state::update() {
       m_man.push_new_state<avbd_test_state>();
     }
 
-    // delete
+    // delete random polygon 
     if (keybinds["Z"]->ispressed || keybinds["Z"]->timeheld > 0.1) {
       if (size<poly_qt>(get<reg_t>(m_phy), reg) > 4) {
         unsigned i = random_index(4, size<poly_qt>(get<reg_t>(m_phy), reg) - 1);
@@ -225,24 +251,78 @@ void avbd_test_state::update() {
       clear_null(get<reg_t>(m_phy));
     }
 
+    // delete under cursor
     if (keybinds["D"]->ispressed || keybinds["D"]->timeheld > 0.1) {
       if (get_qt<poly_qt>().size() > 1) {
-        auto &pcnt_s = get<cp6::pcnt_system>(m_phy);
-        const std::vector<dlm::ikey<1>> &mouse_to_1pcnt =
-          pcnt_s.q1_to_pcnt<poly_qt, poly_qt>(reg, 0);
-        const std::vector<dlm::ikey<1>> &mouse_to_2pcnt =
-          pcnt_s.q2_to_pcnt<poly_qt, poly_qt>(reg, 0);
 
-        for (unsigned i = 0; i < mouse_to_1pcnt.size(); i++) {
-          unsigned other_q = pcnt_s.pcnt_to_q2<poly_qt, poly_qt>(reg)[mouse_to_1pcnt[i]];
-          // don't want to delete the walls
-          if (other_q > 3) { dlm::null<poly_qt>(get<reg_t>(m_phy), {reg, other_q}); }
+        // deleting polygons
+        {
+          auto &pcnt_s = get<cp6::pcnt_system>(m_phy);
+          const std::vector<dlm::ikey<1>>
+            &mouse_to_1pcnt = pcnt_s.q1_to_pcnt<poly_qt, poly_qt>(reg, 0);
+          const std::vector<dlm::ikey<1>>
+            &mouse_to_2pcnt = pcnt_s.q2_to_pcnt<poly_qt, poly_qt>(reg, 0);
+
+          for (unsigned i = 0; i < mouse_to_1pcnt.size(); i++) {
+            unsigned other_q = pcnt_s.pcnt_to_q2<poly_qt, poly_qt>(
+              reg
+            )[mouse_to_1pcnt[i]];
+            // don't want to delete the walls
+            if (other_q > 3) {
+              dlm::null<poly_qt>(get<reg_t>(m_phy), {reg, other_q});
+            }
+          }
+
+          for (unsigned i = 0; i < mouse_to_2pcnt.size(); i++) {
+            unsigned other_q = pcnt_s.pcnt_to_q1<poly_qt, poly_qt>(
+              reg
+            )[mouse_to_2pcnt[i]];
+            if (other_q > 3) {
+              dlm::null<poly_qt>(get<reg_t>(m_phy), {reg, other_q});
+            }
+          }
         }
 
-        for (unsigned i = 0; i < mouse_to_2pcnt.size(); i++) {
-          unsigned other_q = pcnt_s.pcnt_to_q1<poly_qt, poly_qt>(reg)[mouse_to_1pcnt[i]];
-          if (other_q > 3) { dlm::null<poly_qt>(get<reg_t>(m_phy), {reg, other_q}); }
+        // deleting particles
+        {
+          // there's no adjacency for temporary contacts, so this is a bit
+          // inefficient
+
+          auto &np_s = get<cp6::narrowphase_system>(m_phy);
+          cp6::contact_1p_set
+            &tcnt_state = np_s.get_tcnt_data<particle_qt, poly_qt>(reg);
+
+          for (unsigned i = 0; i < tcnt_state.size(); i++) {
+            // 0 is mouse collider
+            if (tcnt_state[i].q2 == 0) {
+              dlm::null<particle_qt>(
+                get<reg_t>(m_phy),
+                {reg, tcnt_state[i].q1}
+              );
+            }
+          }
         }
+
+        // deleting liquid particles
+        {
+          // there's no adjacency for temporary contacts, so this is a bit
+          // inefficient
+
+          auto &np_s = get<cp6::narrowphase_system>(m_phy);
+          cp6::contact_1p_set
+            &tcnt_state = np_s.get_tcnt_data<liquid_qt, poly_qt>(reg);
+
+          for (unsigned i = 0; i < tcnt_state.size(); i++) {
+            // 0 is mouse collider
+            if (tcnt_state[i].q2 == 0) {
+              dlm::null<liquid_qt>(
+                get<reg_t>(m_phy),
+                {reg, tcnt_state[i].q1}
+              );
+            }
+          }
+        }
+
         clear_null(get<reg_t>(m_phy));
       }
     }
@@ -263,19 +343,27 @@ void avbd_test_state::update() {
     // camera movement
     {
       if (keybinds["Up"]->isheld) {
-        m_view.setCenter(m_view.getCenter() - sf::Vector2f{0, 1 * dt * m_view.getSize().x});
+        m_view.setCenter(
+          m_view.getCenter() - sf::Vector2f{0, 1 * dt * m_view.getSize().x}
+        );
       }
 
       if (keybinds["Down"]->isheld) {
-        m_view.setCenter(m_view.getCenter() + sf::Vector2f{0, 1 * dt * m_view.getSize().x});
+        m_view.setCenter(
+          m_view.getCenter() + sf::Vector2f{0, 1 * dt * m_view.getSize().x}
+        );
       }
 
       if (keybinds["Right"]->isheld) {
-        m_view.setCenter(m_view.getCenter() + sf::Vector2f{2 * dt * m_view.getSize().y, 0});
+        m_view.setCenter(
+          m_view.getCenter() + sf::Vector2f{2 * dt * m_view.getSize().y, 0}
+        );
       }
 
       if (keybinds["Left"]->isheld) {
-        m_view.setCenter(m_view.getCenter() - sf::Vector2f{2 * dt * m_view.getSize().y, 0});
+        m_view.setCenter(
+          m_view.getCenter() - sf::Vector2f{2 * dt * m_view.getSize().y, 0}
+        );
       }
 
       if (keybinds["Hyphen"]->isheld) { m_view.zoom(1 + dt); }
@@ -284,25 +372,36 @@ void avbd_test_state::update() {
     }
 
     const sf::RenderWindow &window = m_man.get_window();
-    vec2f mouse_pos = from_sf(window.mapPixelToCoords(sf::Mouse::getPosition(window), m_view));
+    vec2f mouse_pos = from_sf(
+      window.mapPixelToCoords(sf::Mouse::getPosition(window), m_view)
+    );
 
     {
-      if (get_qt<poly_qt>().size() > 1) { get_qt<poly_qt>().q()[0].xy() = mouse_pos; }
+      if (get_qt<poly_qt>().size() > 1) {
+        get_qt<poly_qt>().q()[0].xy() = mouse_pos;
+      }
 
-      if (get<cp6::avbd_pin_fg>(m_phy).q1_to_pf<poly_qt, poly_qt>(reg, 0).size() == 0) {
+      if (
+        get<cp6::avbd_pin_fg>(m_phy).q1_to_pf<poly_qt, poly_qt>(reg, 0).size()
+        == 0
+      ) {
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-          const std::vector<dlm::ikey<1>> &mouse_to_a_pcnt =
-            get<cp6::pcnt_system>(m_phy).q1_to_pcnt<poly_qt, poly_qt>(reg, 0);
-          const std::vector<dlm::ikey<1>> &mouse_to_b_pcnt =
-            get<cp6::pcnt_system>(m_phy).q2_to_pcnt<poly_qt, poly_qt>(reg, 0);
+          const std::vector<dlm::ikey<1>>
+            &mouse_to_a_pcnt = get<cp6::pcnt_system>(m_phy)
+                                 .q1_to_pcnt<poly_qt, poly_qt>(reg, 0);
+          const std::vector<dlm::ikey<1>>
+            &mouse_to_b_pcnt = get<cp6::pcnt_system>(m_phy)
+                                 .q2_to_pcnt<poly_qt, poly_qt>(reg, 0);
 
           unsigned other_q = -1;
           if (!mouse_to_a_pcnt.empty()) {
-            other_q =
-              get<cp6::pcnt_system>(m_phy).pcnt_to_q2<poly_qt, poly_qt>(reg)[mouse_to_a_pcnt[0]];
+            other_q = get<cp6::pcnt_system>(m_phy).pcnt_to_q2<poly_qt, poly_qt>(
+              reg
+            )[mouse_to_a_pcnt[0]];
           } else if (!mouse_to_b_pcnt.empty()) {
-            other_q =
-              get<cp6::pcnt_system>(m_phy).pcnt_to_q1<poly_qt, poly_qt>(reg)[mouse_to_b_pcnt[0]];
+            other_q = get<cp6::pcnt_system>(m_phy).pcnt_to_q1<poly_qt, poly_qt>(
+              reg
+            )[mouse_to_b_pcnt[0]];
           }
 
           if (other_q != -1) {
@@ -311,17 +410,28 @@ void avbd_test_state::update() {
               reg,
               0,
               other_q,
-              {.ra = {0, 0}, .rb = cp6::inv_transform_point(other_q, get_qt<poly_qt>(), mouse_pos)}
+              {.ra = {0, 0},
+               .rb = cp6::inv_transform_point(
+                 other_q,
+                 get_qt<poly_qt>(),
+                 mouse_pos
+               )}
             );
           }
         }
       }
 
       if (
-        !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) &&
-        get<cp6::avbd_pin_fg>(m_phy).q1_to_pf<poly_qt, poly_qt>(reg, 0).size() != 0
+        !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)
+        && get<cp6::avbd_pin_fg>(m_phy)
+               .q1_to_pf<poly_qt, poly_qt>(reg, 0)
+               .size()
+             != 0
       ) {
-        unsigned pin = get<cp6::avbd_pin_fg>(m_phy).q1_to_pf<poly_qt, poly_qt>(reg, 0)[0];
+        unsigned pin = get<cp6::avbd_pin_fg>(m_phy).q1_to_pf<poly_qt, poly_qt>(
+          reg,
+          0
+        )[0];
 
         get<cp6::avbd_pin_fg>(m_phy).remove_pin<poly_qt, poly_qt>(reg, pin);
       }
@@ -329,7 +439,9 @@ void avbd_test_state::update() {
 
     // adding shapes at mouse position
     {
-      if (scalers::get("shape type", 1, 1) > 6) { scalers::set("shape type", 0); }
+      if (scalers::get("shape type", 1, 1) > 6) {
+        scalers::set("shape type", 0);
+      }
       if (scalers::get("shape type") < 0) { scalers::set("shape type", 0); }
       // add shape
       if (keybinds["E"]->ispressed || keybinds["E"]->timeheld > 0.2) {
@@ -360,7 +472,7 @@ void avbd_test_state::update() {
   const float h = 1.f / iterations;
   caller.update(dt, max(dt, h), [&] {
     const float sub_steps = scalers::get("sub steps", 10, 1);
-    const float impulse_sub_steps = scalers::get("impulse sub steps", 4, 1);
+    // const float impulse_sub_steps = scalers::get("impulse sub steps", 4, 1);
 
     // caller.update(dt, h, [&] {
     // transforming collider data
@@ -396,10 +508,11 @@ void avbd_test_state::update() {
     }
     // moving contacts so the liquid radius seems smaller to rigid bodies
     {
-      auto &lp_tcnt_col_state =
-        get<cp6::narrowphase_system>(m_phy).get_tcnt_data<liquid_qt, poly_qt>(reg);
+      auto &lp_tcnt_col_state = get<cp6::narrowphase_system>(m_phy)
+                                  .get_tcnt_data<liquid_qt, poly_qt>(reg);
       for (unsigned i = 0; i < lp_tcnt_col_state.size(); i++) {
-        lp_tcnt_col_state[i].x2 += lp_tcnt_col_state[i].n * (liquid_kernal_collider_radius + 10);
+        lp_tcnt_col_state[i].x2 += lp_tcnt_col_state[i].n
+                                 * (liquid_kernal_collider_radius + 10);
       }
     }
 
@@ -495,7 +608,11 @@ void avbd_test_state::update() {
       // }
       // clamping rotation
       for (unsigned q = 0; q < get_qt<poly_qt>().size(); q++) {
-        get_qt<poly_qt>().q_dot()[q].z = clamp(get_qt<poly_qt>().q_dot()[q].z, -5, 5);
+        get_qt<poly_qt>().q_dot()[q].z = clamp(
+          get_qt<poly_qt>().q_dot()[q].z,
+          -5,
+          5
+        );
       }
     }
     PA::inst().end("phy solve");
@@ -653,7 +770,9 @@ void avbd_test_state::update() {
     {
       unsigned total_num = 0;
       for_each_i<qt_num>([&]<size_t QT> {
-        if constexpr (cp6::is_cqt<qt_t<QT>>::value) { total_num += get_qt<QT>().size(); }
+        if constexpr (cp6::is_cqt<qt_t<QT>>::value) {
+          total_num += get_qt<QT>().size();
+        }
       });
 
       auto &color_s = get<cp6::color_system>(m_phy);
@@ -690,7 +809,9 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
   PA::inst().start("draw");
   // drawing cds
   for_each_i<qt_num>([&]<size_t QT> {
-    if (QT != liquid_qt) { draw_cd(window, get_qt<QT>().cd(), sf::Color{75, 0, 110, 200}); }
+    if (QT != liquid_qt) {
+      draw_cd(window, get_qt<QT>().cd(), sf::Color{75, 0, 110, 200});
+    }
   });
 
   if (flags::get("draw_colors", true)) {
@@ -706,7 +827,13 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
           } else {
             curr_color = sf::Color::White;
           }
-          draw_cd_outline(window, get_qt<QT>().cd(), color.to_q, color.cq_num, curr_color);
+          draw_cd_outline(
+            window,
+            get_qt<QT>().cd(),
+            color.to_q,
+            color.cq_num,
+            curr_color
+          );
         }
       }
     });
@@ -714,23 +841,37 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
 
   // drawing pins
   tri_apply<qt_num>([&]<size_t QT1, size_t QT2> {
-    if constexpr (cp6::is_pinqt<qt_t<QT1>>::value && cp6::is_pinqt<qt_t<QT1>>::value) {
+    if constexpr (
+      cp6::is_pinqt<qt_t<QT1>>::value && cp6::is_pinqt<qt_t<QT1>>::value
+    ) {
       sf::CircleShape pin_circle;
       pin_circle.setRadius(3);
       pin_circle.setOrigin({pin_circle.getRadius(), pin_circle.getRadius()});
       pin_circle.setFillColor(sf::Color::White);
 
-      const unsigned *edges_a = get<cp6::avbd_pin_fg>(m_phy).pf_to_q1<QT1, QT2>(reg);
-      const unsigned *edges_b = get<cp6::avbd_pin_fg>(m_phy).pf_to_q2<QT1, QT2>(reg);
-      const dlm::vec_ds<cp6::pin_data> &pin_state =
-        get<cp6::avbd_pin_fg>(m_phy).get_pf_state<QT1, QT2>(reg);
+      const unsigned *edges_a = get<cp6::avbd_pin_fg>(m_phy).pf_to_q1<QT1, QT2>(
+        reg
+      );
+      const unsigned *edges_b = get<cp6::avbd_pin_fg>(m_phy).pf_to_q2<QT1, QT2>(
+        reg
+      );
+      const dlm::vec_ds<cp6::pin_data>
+        &pin_state = get<cp6::avbd_pin_fg>(m_phy).get_pf_state<QT1, QT2>(reg);
 
       for (unsigned p = 0; p < pin_state.size(); p++) {
         unsigned q_a = edges_a[p];
         unsigned q_b = edges_b[p];
 
-        vec2f pin_world_a = cp6::transform_point(q_a, get_qt<QT1>(), pin_state[p].ra);
-        vec2f pin_world_b = cp6::transform_point(q_b, get_qt<QT2>(), pin_state[p].rb);
+        vec2f pin_world_a = cp6::transform_point(
+          q_a,
+          get_qt<QT1>(),
+          pin_state[p].ra
+        );
+        vec2f pin_world_b = cp6::transform_point(
+          q_b,
+          get_qt<QT2>(),
+          pin_state[p].rb
+        );
 
         pin_circle.setPosition(to_sf(pin_world_a));
         window.draw(pin_circle);
@@ -744,7 +885,9 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
   if (flags::get("draw contacts", false)) {
     // drawing persistant contacts green
     tri_apply<qt_num>([&]<size_t QT_A, size_t QT_B> {
-      if constexpr (cp6::is_pcqt<qt_t<QT_A>>::value && cp6::is_pcqt<qt_t<QT_B>>::value) {
+      if constexpr (
+        cp6::is_pcqt<qt_t<QT_A>>::value && cp6::is_pcqt<qt_t<QT_B>>::value
+      ) {
         draw_col_state(
           window,
           get<cp6::pcnt_system>(m_phy).template get_pcnt_data<QT_A, QT_B>(reg),
@@ -759,15 +902,17 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
     tri_apply<qt_num>([&]<size_t QT1, size_t QT2> {
       draw_col_state(
         window,
-        get<cp6::narrowphase_system>(m_phy).template get_tcnt_data<QT1, QT2>(reg),
+        get<cp6::narrowphase_system>(m_phy).template get_tcnt_data<QT1, QT2>(
+          reg
+        ),
         {0, 0}
       );
     });
 
     // drawing sticking contacts yellow
     {
-      const auto &avbd_cnts =
-        get<cp6::avbd_pcnt_fg>(m_phy).get_avbd_pcnt_data<poly_qt, poly_qt>(reg);
+      const auto &avbd_cnts = get<cp6::avbd_pcnt_fg>(m_phy)
+                                .get_avbd_pcnt_data<poly_qt, poly_qt>(reg);
       sf::CircleShape p;
       p.setRadius(5);
       p.setOutlineThickness(-1);
@@ -776,16 +921,32 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
       for (unsigned i = 0; i < avbd_cnts.size(); i++) {
         const auto &c = avbd_cnts[i];
         if (c.cnt1.stick) {
-          vec2f world1 = transform_point(c.q1, get_qt<poly_qt>().qd(), c.cnt1.x1);
-          vec2f world2 = transform_point(c.q2, get_qt<poly_qt>().qd(), c.cnt1.x2);
+          vec2f world1 = transform_point(
+            c.q1,
+            get_qt<poly_qt>().qd(),
+            c.cnt1.x1
+          );
+          vec2f world2 = transform_point(
+            c.q2,
+            get_qt<poly_qt>().qd(),
+            c.cnt1.x2
+          );
           p.setPosition(to_sf(world1));
           window.draw(p);
           p.setPosition(to_sf(world2));
           window.draw(p);
         }
         if (c.cnt2.is_valid() && c.cnt2.stick) {
-          vec2f world1 = transform_point(c.q1, get_qt<poly_qt>().qd(), c.cnt2.x1);
-          vec2f world2 = transform_point(c.q2, get_qt<poly_qt>().qd(), c.cnt2.x2);
+          vec2f world1 = transform_point(
+            c.q1,
+            get_qt<poly_qt>().qd(),
+            c.cnt2.x1
+          );
+          vec2f world2 = transform_point(
+            c.q2,
+            get_qt<poly_qt>().qd(),
+            c.cnt2.x2
+          );
           p.setPosition(to_sf(world1));
           window.draw(p);
           p.setPosition(to_sf(world2));
@@ -818,15 +979,19 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
       arrow[0].color = {255, 255, 0, 200};
       arrow[1].color = {255, 0, 0, 200};
       arrow[0].position = to_sf(pqt.q()[q].xy());
-      arrow[1].position = to_sf(pqt.q()[q].xy() - pqt.f_sum()[q].xy() * 5 / 1e7);
+      arrow[1].position = to_sf(
+        pqt.q()[q].xy() - pqt.f_sum()[q].xy() * 5 / 1e7
+      );
       window.draw(arrow.data(), arrow.size(), sf::PrimitiveType::Lines);
       arrow[0].color = {0, 255, 0, 200};
       arrow[1].color = {0, 255, 255, 200};
       float f_len = length(pqt.f_sum()[q].xy());
       if (f_len > 0) {
         arrow[0].position = to_sf(pqt.q()[q].xy());
-        arrow[1].position =
-          to_sf(pqt.q()[q].xy() + perp_l(pqt.f_sum()[q].xy() / f_len) * (pqt.f_sum()[q].z / 1e7));
+        arrow[1].position = to_sf(
+          pqt.q()[q].xy()
+          + perp_l(pqt.f_sum()[q].xy() / f_len) * (pqt.f_sum()[q].z / 1e7)
+        );
       }
       window.draw(arrow.data(), arrow.size(), sf::PrimitiveType::Lines);
     }
@@ -835,23 +1000,30 @@ void avbd_test_state::draw(sf::RenderWindow &window) {
   if (flags::get("draw contact lambda", false)) {
     std::array<sf::Vertex, 2> arrow;
     auto &pqd = get_qt<poly_qt>().qd();
-    const auto &avbd_cnts = get<cp6::avbd_pcnt_fg>(m_phy).get_avbd_pcnt_data<poly_qt, poly_qt>(reg);
+    const auto &avbd_cnts = get<cp6::avbd_pcnt_fg>(m_phy)
+                              .get_avbd_pcnt_data<poly_qt, poly_qt>(reg);
     for (unsigned i = 0; i < avbd_cnts.size(); i++) {
       const auto &c = avbd_cnts[i];
       if (c.cnt1.stick) {
         arrow[0].color = {255, 255, 0, 200};
         arrow[1].color = {255, 0, 0, 200};
         arrow[0].position = to_sf(transform_point(c.q1, pqd, c.cnt1.x1));
-        arrow[1].position =
-          to_sf(transform_point(c.q1, pqd, c.cnt1.x1 + c.cnt1.n * (c.cnt1.lambda.x / 1e7)));
+        arrow[1].position = to_sf(transform_point(
+          c.q1,
+          pqd,
+          c.cnt1.x1 + c.cnt1.n * (c.cnt1.lambda.x / 1e7)
+        ));
         window.draw(arrow.data(), arrow.size(), sf::PrimitiveType::Lines);
       }
       if (c.cnt2.is_valid()) {
         arrow[0].color = {255, 255, 0, 200};
         arrow[1].color = {255, 0, 0, 200};
         arrow[0].position = to_sf(transform_point(c.q1, pqd, c.cnt2.x1));
-        arrow[1].position =
-          to_sf(transform_point(c.q1, pqd, c.cnt2.x1 + c.cnt2.n * (c.cnt2.lambda.x / 1e7)));
+        arrow[1].position = to_sf(transform_point(
+          c.q1,
+          pqd,
+          c.cnt2.x1 + c.cnt2.n * (c.cnt2.lambda.x / 1e7)
+        ));
         window.draw(arrow.data(), arrow.size(), sf::PrimitiveType::Lines);
       }
     }
@@ -866,8 +1038,11 @@ unsigned avbd_test_state::add_poly(vec2f pos, vector_poly shape) {
   grow<poly_qt>(get<reg_t>(m_phy), 1, {reg});
   get_qt<poly_qt>().q()[q].xy() = pos;
   get_qt<poly_qt>().base_cd()[q] = std::move(shape);
-  get_qt<poly_qt>()
-    .calculate_constants(q, &get_qt<poly_qt>().mass()[q].x, &get_qt<poly_qt>().mass()[q].z);
+  get_qt<poly_qt>().calculate_constants(
+    q,
+    &get_qt<poly_qt>().mass()[q].x,
+    &get_qt<poly_qt>().mass()[q].z
+  );
   get_qt<poly_qt>().mass()[q].y = get_qt<poly_qt>().mass()[q].x;
 
   return q;
